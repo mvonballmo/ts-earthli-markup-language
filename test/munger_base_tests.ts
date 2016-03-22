@@ -1,8 +1,4 @@
-/**
- * Created by marco on 21/03/2016.
- */
-
-///<reference path="../lib/munger.ts"/>
+/// <reference path="../lib/munger.ts"/>
 /// <reference path="../typings/main.d.ts" />
 
 var assert = require('assert');
