@@ -1,8 +1,6 @@
-/// <reference path="../lib/munger.ts"/>
 /// <reference path="../typings/main.d.ts" />
 
-var assert = require('assert');
-
+import {expect} from 'chai';
 import {HtmlMunger} from '../lib/html_munger';
 
 describe('HtmlMunger', function()
@@ -14,14 +12,15 @@ describe('HtmlMunger', function()
       var m = new HtmlMunger();
 
       var output = m.transform("plain text");
-      assert.equal(output, '<p>plain text</p>\n');
+      
+      expect(output).to.equal('<p>plain text</p>\n');
     })
     it('should convert single quotes to HTML entities', function()
     {
       var m = new HtmlMunger();
       
       var output = m.transform("''cause that's wrong'");
-      assert.equal(output, '<p>&lsquo;&lsquo;cause that&rsquo;s wrong&rsquo;</p>\n');
+      expect(output).to.equal('<p>&lsquo;&lsquo;cause that&rsquo;s wrong&rsquo;</p>\n');
     })
   });
 });
