@@ -8,11 +8,12 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "chai": "*",
-    "mocha": "*"
+    "chai": "^3.5.0",
+    "mocha": "^2.4.5",
+    "source-map-support": "^0.4.0"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha --require source-map-support/register test"
   },
   "repository": {
     "type": "git",
