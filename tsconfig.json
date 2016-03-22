@@ -1,11 +1,18 @@
 {
-  "compilerOptions": {
+  "compilerOptions": 
+  {
     "target": "es6",
     "module": "amd",
-    "sourceMap": true
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noImplicitAny": true
   },
+  
   "exclude": [
     "typings",
     "node_modules"
-  ]
+  ],
+  "compileOnSave": false
 }
