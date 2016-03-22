@@ -2,7 +2,7 @@
   "compilerOptions": 
   {
     "target": "es6",
-    "module": "amd",
+    "module": "commonjs",
     "sourceMap": true,
     "allowSyntheticDefaultImports": false,
     "noFallthroughCasesInSwitch": true,
