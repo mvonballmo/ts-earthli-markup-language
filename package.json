@@ -10,7 +10,10 @@
   "devDependencies": {
     "chai": "^3.5.0",
     "mocha": "^2.4.5",
-    "source-map-support": "^0.4.0"
+    "source-map-support": "^0.4.0",
+    "tsc": "^1.20150623.0",
+    "typescript": "^1.8.9",
+    "typings": "^0.7.9"
   },
   "scripts": {
     "test": "mocha --require source-map-support/register test"
