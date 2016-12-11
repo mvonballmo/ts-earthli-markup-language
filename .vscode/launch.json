@@ -8,10 +8,22 @@
       "type": "node",
       "request": "launch",
       "name": "Launch Program",
-      "program": "${workspaceRoot}/index.js",
+      "program": "${workspaceRoot}/node_modules/mocha/bin/_mocha",
       "cwd": "${workspaceRoot}",
       "outFiles": [],
-      "sourceMaps": true
+      "sourceMaps": true,
+      "stopOnEntry": false,
+      "args": [
+        "${workspaceRoot}/test/LowLevelTokenizerTests.js"            
+      ],
+      "runtimeExecutable": null,
+      "runtimeArgs": [
+        "--nolazy"
+      ],
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "console": "internalConsole"
     },
     {
       "type": "node",
