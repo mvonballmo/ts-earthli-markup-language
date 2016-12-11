@@ -5,7 +5,7 @@
   {
     "**/*.js": {"when": "$(basename).ts"},
     "**/*.map": true
-  }
-,
-"typescript.tsdk": "./node_modules/typescript/lib"
+  },
+  "typescript.tsdk": "./node_modules/typescript/lib",
+  "mocha.files.glob": "test/LowLevelTokenizerTests.js"
 }
