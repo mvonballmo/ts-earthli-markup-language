@@ -90,11 +90,48 @@ describe('LowLevelTokenizer', function()
       assertToken(tokenizer, LowLevelTokenType.EndTag, "tag", 0, 0);
       assertDone(tokenizer);
     })
+    it('empty start tag', function()
+    {
+      var tokenizer = createTokenizer("<>");
+
+      assertToken(tokenizer, LowLevelTokenType.Text, "<>", 0, 0);
+      assertDone(tokenizer);
+    })
     it('empty end tag', function()
     {
       var tokenizer = createTokenizer("</>");
 
       assertToken(tokenizer, LowLevelTokenType.Text, "</>", 0, 0);
+      assertDone(tokenizer);
+    })
+    it('start tag with text', function()
+    {
+      var tokenizer = createTokenizer("<tag>Text");
+
+      assertToken(tokenizer, LowLevelTokenType.StartTag, "tag", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.Text, "Text", 0, 5);
+      assertDone(tokenizer);
+    })
+    it('end tag with text', function()
+    {
+      var tokenizer = createTokenizer("</tag>Text");
+
+      assertToken(tokenizer, LowLevelTokenType.EndTag, "tag", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.Text, "Text", 0, 6);
+      assertDone(tokenizer);
+    })
+    it('empty start tag with text', function()
+    {
+      var tokenizer = createTokenizer("<>Text");
+
+      assertToken(tokenizer, LowLevelTokenType.Text, "<>Text", 0, 0);
+      assertDone(tokenizer);
+    })
+    it('empty end tag with text', function()
+    {
+      var tokenizer = createTokenizer("</>Text");
+
+      assertToken(tokenizer, LowLevelTokenType.Text, "</>Text", 0, 0);
       assertDone(tokenizer);
     })
     it('start tag without close bracket', function()

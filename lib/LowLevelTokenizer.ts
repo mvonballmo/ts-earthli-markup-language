@@ -34,14 +34,6 @@ export interface ITokenizer
   GetNext(): LowLevelToken;
 }
 
-enum State
-{
-  Text,
-  Newline,
-  Tag,
-  Attribute
-}
-
 export class LowLevelTokenizer implements ITokenizer
 {
   constructor(input: string)
@@ -49,7 +41,7 @@ export class LowLevelTokenizer implements ITokenizer
     this.input = input;
     this.scan = 0;
     this.start = 0;
-    this.state = State.Text;
+    this.state = LowLevelTokenType.Text;
   }
 
   GetNext(): LowLevelToken
@@ -57,77 +49,10 @@ export class LowLevelTokenizer implements ITokenizer
     while (this.scan < this.input.length)
     {
       let char = this.input.charAt(this.scan);
-
-      switch (this.state)
+      let token = this.HandleChar(char);
+      if (token != null)
       {
-        case State.Text:
-          switch (char)
-          {
-            case "\n":
-              if (this.HasBuffer())
-              {
-                return new LowLevelToken(LowLevelTokenType.Text, this.GetBuffer())
-              }
-              else
-              {
-                this.start += 1;
-                this.scan += 1;
-                return new LowLevelToken(LowLevelTokenType.NewLine, "");                  
-              }
-            case "\r":
-            {
-              if (this.HasBuffer())
-              {
-                let result = new LowLevelToken(LowLevelTokenType.Text, this.GetBuffer());
-                this.state = State.Newline;
-                this.scan += 1;
-
-                return result;
-              }
-              else
-              {
-                this.state = State.Newline;
-                this.scan += 1;                
-              }
-              break;                
-            }
-            case "<":
-            {
-              this.state = State.Tag;
-              this.scan += 1;
-              break;
-            }
-            default:
-            {
-              this.scan += 1;
-            }
-          }
-          break;
-        case State.Newline:
-        {
-          this.scan += 1;
-          this.state = State.Text;
-          switch (char)
-          {
-            case "\n":
-              this.start = this.scan;
-              return new LowLevelToken(LowLevelTokenType.NewLine, "");              
-          }
-          break;
-        }
-        case State.Tag:
-          switch (char)
-          {
-            case ">":
-              this.start = this.scan;
-              return new LowLevelToken(LowLevelTokenType.NewLine, "<");              
-            case " ":
-            case "\n":
-            case "\r":            
-              this.state = State.Attribute;
-              return new LowLevelToken(LowLevelTokenType.StartTag, this.GetBuffer());
-          }
-          break;
+        return token;
       }
     }
 
@@ -139,6 +64,148 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
+  HandleChar(char: string): LowLevelToken
+  {
+    switch (this.state)
+    {
+      case LowLevelTokenType.Text:
+        return this.HandleText(char);
+      case LowLevelTokenType.NewLine:
+        return this.HandleNewLine(char);
+      case LowLevelTokenType.StartTag:
+        return this.HandleStartTag(char);
+      case LowLevelTokenType.EndTag:
+        return this.HandleEndTag(char);
+      case LowLevelTokenType.AttributeName:
+        return this.HandleAttributeName(char);
+      case LowLevelTokenType.AttributeValue:
+        return this.HandleAttributeValue(char);
+      default:
+        throw new Error("Unexpected state: " + this.state);
+    }
+  }
+
+  HandleText(char: string): LowLevelToken
+  {
+    switch (char)
+    {
+      case "\n":
+        if (this.HasBuffer())
+        {
+          return new LowLevelToken(LowLevelTokenType.Text, this.GetBuffer())
+        }
+        else
+        {
+          this.start += 1;
+          this.scan += 1;
+          return new LowLevelToken(LowLevelTokenType.NewLine, "");                  
+        }
+      case "\r":
+      {
+        if (this.HasBuffer())
+        {
+          let result = new LowLevelToken(LowLevelTokenType.Text, this.GetBuffer());
+          this.state = LowLevelTokenType.NewLine;
+          this.scan += 1;
+
+          return result;
+        }
+        else
+        {
+          this.state = LowLevelTokenType.NewLine;
+          this.scan += 1;                
+        }
+        break;                
+      }
+      case "<":
+      {
+        this.state = LowLevelTokenType.StartTag;
+        this.scan += 1;
+        break;
+      }
+      default:
+      {
+        this.scan += 1;
+      }
+    }
+
+    return null;    
+  }
+
+  HandleNewLine(char: string): LowLevelToken
+  {
+    this.scan += 1;
+    this.state = LowLevelTokenType.Text;
+    switch (char)
+    {
+      case "\n":
+        this.start = this.scan;
+        return new LowLevelToken(LowLevelTokenType.NewLine, "");              
+    }
+
+    return null;
+  }
+
+  HandleStartTag(char: string): LowLevelToken
+  {
+    switch (char)
+    {
+      case ">":
+        return new LowLevelToken(LowLevelTokenType.StartTag, this.GetBuffer());
+      case "<":
+        this.start = this.scan;
+        this.scan += 1;
+        break;
+      case "/":
+        this.state = LowLevelTokenType.EndTag;
+        this.start = this.scan;
+        this.scan += 1;
+        break;
+      case " ":
+      case "\n":
+      case "\r":            
+        this.state = LowLevelTokenType.AttributeName;
+        return new LowLevelToken(LowLevelTokenType.StartTag, this.GetBuffer());
+      default:
+        this.scan += 1;
+    }
+
+    return null;    
+  }
+
+  HandleEndTag(char: string): LowLevelToken
+  {
+    switch (char)
+    {
+      default:
+        this.scan += 1;
+    }
+
+    return null;
+  }
+
+  HandleAttributeName(char: string): LowLevelToken
+  {
+    switch (char)
+    {
+      default:
+        this.scan += 1;
+    }
+
+    return null;
+  }
+
+  HandleAttributeValue(char: string): LowLevelToken
+  {
+    switch (char)
+    {
+      default:
+        this.scan += 1;
+    }
+
+    return null;
+  }
+  
   HasBuffer(): boolean
   {
     return this.scan > this.start;
@@ -152,7 +219,7 @@ export class LowLevelTokenizer implements ITokenizer
     return this.input.substring(start, this.scan);
   }
 
-  private state: State;
+  private state: LowLevelTokenType;
   private start: number;
   private scan: number;
   private input: string;
