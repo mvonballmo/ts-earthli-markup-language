@@ -8,12 +8,11 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@types/chai": "^3.4.34",
+    "@types/mocha": "^2.2.34",
     "chai": "^3.5.0",
     "mocha": "^3.2.0",
-    "source-map-support": "^0.4.0",
-    "tsc": "^1.20150623.0",
-    "typescript": "^2.1.4",
-    "typings": "^2.0.0"
+    "typescript": "^2.1.4"
   },
   "scripts": {
     "test": "mocha --require source-map-support/register test"

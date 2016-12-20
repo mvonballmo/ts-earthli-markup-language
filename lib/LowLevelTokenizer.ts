@@ -1,14 +1,14 @@
-import {MungerToken} from "./munger_token";
-import {MungerTokenType} from "./munger_token_type";
-
 export enum LowLevelTokenType
 {
   Text,
   NewLine,
-  StartTag,
-  EndTag,
+  StartOpenTag,
   AttributeName,
+  OpenQuote,
   AttributeValue,
+  CloseQuote,
+  EndOpenTag,
+  CloseTag,
   Error
 }
 
@@ -29,6 +29,41 @@ export class LowLevelToken
   Column: number;
 }
 
+export interface ITagDefinition
+{
+  Name: string;
+}
+
+export class TagDefinition implements ITagDefinition
+{
+  constructor(name: string)
+  {
+    this.Name = name;
+  }
+
+  Name: string;
+}
+
+export interface ITagLibrary
+{
+  Get(name: string): ITagDefinition;
+}
+
+export class TagLibrary implements ITagLibrary
+{
+  Add(tagDefinition: ITagDefinition): void
+  {
+    this.tags[tagDefinition.Name] = tagDefinition;
+  }
+
+  Get(name: string): ITagDefinition
+  {
+    return this.tags[name];
+  }
+
+  private tags: {[key:string]: ITagDefinition} = {};
+}
+
 export interface ITokenizer
 {
   GetNext(): LowLevelToken;
@@ -36,11 +71,13 @@ export interface ITokenizer
 
 export class LowLevelTokenizer implements ITokenizer
 {
-  constructor(input: string)
+  constructor(tagLibrary: ITagLibrary, input: string)
   {
+    this.tagLibrary = tagLibrary;
     this.input = input;
     this.scan = 0;
     this.start = 0;
+    this.consumed = 0;
     this.state = LowLevelTokenType.Text;
   }
 
@@ -56,9 +93,20 @@ export class LowLevelTokenizer implements ITokenizer
       }
     }
 
-    if (this.HasBuffer())
+    this.start = this.consumed;
+
+    switch (this.state)
     {
-      return new LowLevelToken(LowLevelTokenType.Text, this.GetBuffer())        
+      case LowLevelTokenType.AttributeName:
+        this.state = LowLevelTokenType.Text;
+        return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
+      default:
+      {
+        if (this.HasBuffer())
+        {
+          return new LowLevelToken(LowLevelTokenType.Text, this.GetBuffer());
+        }
+      }
     }
 
     return null;
@@ -72,16 +120,16 @@ export class LowLevelTokenizer implements ITokenizer
         return this.HandleText(char);
       case LowLevelTokenType.NewLine:
         return this.HandleNewLine(char);
-      case LowLevelTokenType.StartTag:
-        return this.HandleStartTag(char);
-      case LowLevelTokenType.EndTag:
-        return this.HandleEndTag(char);
+      case LowLevelTokenType.StartOpenTag:
+        return this.HandleStartOpenTag(char);
+      case LowLevelTokenType.CloseTag:
+        return this.HandleCloseTag(char);
       case LowLevelTokenType.AttributeName:
         return this.HandleAttributeName(char);
       case LowLevelTokenType.AttributeValue:
         return this.HandleAttributeValue(char);
       default:
-        throw new Error("Unexpected state: " + this.state);
+        throw new Error(`Unexpected state: ${this.state}`);
     }
   }
 
@@ -96,9 +144,9 @@ export class LowLevelTokenizer implements ITokenizer
         }
         else
         {
-          this.start += 1;
           this.scan += 1;
-          return new LowLevelToken(LowLevelTokenType.NewLine, "");                  
+          this.ConsumeToScan();
+          return new LowLevelToken(LowLevelTokenType.NewLine, "");
         }
       case "\r":
       {
@@ -113,13 +161,14 @@ export class LowLevelTokenizer implements ITokenizer
         else
         {
           this.state = LowLevelTokenType.NewLine;
-          this.scan += 1;                
+          this.scan += 1;
         }
-        break;                
+        break;
       }
       case "<":
       {
-        this.state = LowLevelTokenType.StartTag;
+        this.state = LowLevelTokenType.StartOpenTag;
+        this.start += 1;
         this.scan += 1;
         break;
       }
@@ -129,7 +178,7 @@ export class LowLevelTokenizer implements ITokenizer
       }
     }
 
-    return null;    
+    return null;
   }
 
   HandleNewLine(char: string): LowLevelToken
@@ -139,46 +188,91 @@ export class LowLevelTokenizer implements ITokenizer
     switch (char)
     {
       case "\n":
-        this.start = this.scan;
-        return new LowLevelToken(LowLevelTokenType.NewLine, "");              
+        this.ConsumeToScan();
+
+        return new LowLevelToken(LowLevelTokenType.NewLine, "");
     }
 
     return null;
   }
 
-  HandleStartTag(char: string): LowLevelToken
+  HandleStartOpenTag(char: string): LowLevelToken
   {
     switch (char)
     {
       case ">":
-        return new LowLevelToken(LowLevelTokenType.StartTag, this.GetBuffer());
+      {
+        let tagName = this.PeekBuffer();
+        if (this.tagLibrary.Get(tagName) != null)
+        {
+          let result = new LowLevelToken(LowLevelTokenType.StartOpenTag, this.GetBuffer());
+          this.scan += 1;
+          this.ConsumeToScan();
+          return result;
+        }
+
+        // Switch to processing text, including previous character
+        this.scan += 1;
+        this.start -= 1;
+        this.state = LowLevelTokenType.Text;
+        break;
+      }
       case "<":
         this.start = this.scan;
         this.scan += 1;
         break;
       case "/":
-        this.state = LowLevelTokenType.EndTag;
-        this.start = this.scan;
+        this.state = LowLevelTokenType.CloseTag;
         this.scan += 1;
+        this.start = this.scan;
         break;
       case " ":
       case "\n":
-      case "\r":            
+      case "\r":
         this.state = LowLevelTokenType.AttributeName;
-        return new LowLevelToken(LowLevelTokenType.StartTag, this.GetBuffer());
+        return new LowLevelToken(LowLevelTokenType.StartOpenTag, this.GetBuffer());
       default:
         this.scan += 1;
+        if (!LowLevelTokenizer.IsAlpha(char))
+        {
+          this.start -= 1;
+          this.state = LowLevelTokenType.Text;
+        }
     }
 
-    return null;    
+    return null;
   }
 
-  HandleEndTag(char: string): LowLevelToken
+  HandleCloseTag(char: string): LowLevelToken
   {
     switch (char)
     {
-      default:
+      case ">":
+      {
+        let tagName = this.PeekBuffer();
+        if (this.tagLibrary.Get(tagName) != null)
+        {
+          let result = new LowLevelToken(LowLevelTokenType.CloseTag, this.GetBuffer());
+          this.scan += 1;
+          this.ConsumeToScan();
+          return result;
+        }
+
+        // Switch to processing text, including previous character
         this.scan += 1;
+        this.start -= 1;
+        this.state = LowLevelTokenType.Text;
+        break;
+      }
+      default:
+      {
+        this.scan += 1;
+        if (!LowLevelTokenizer.IsAlpha(char))
+        {
+          this.start -= 1;
+          this.state = LowLevelTokenType.Text;
+        }
+      }
     }
 
     return null;
@@ -188,8 +282,11 @@ export class LowLevelTokenizer implements ITokenizer
   {
     switch (char)
     {
+      case "=":
+        this.state = LowLevelTokenType.AttributeValue;
+        return new LowLevelToken(LowLevelTokenType.AttributeName, this.GetBuffer());
       default:
-        this.scan += 1;
+        this.scan += 1;        
     }
 
     return null;
@@ -199,13 +296,21 @@ export class LowLevelTokenizer implements ITokenizer
   {
     switch (char)
     {
+      case "\"":            
+        this.state = LowLevelTokenType.AttributeValue;
+        return new LowLevelToken(LowLevelTokenType.AttributeName, this.GetBuffer());
       default:
         this.scan += 1;
     }
 
     return null;
   }
-  
+
+  static IsAlpha(char: string): boolean
+  {
+    return char.search(/[A-Za-z]+/) != -1;
+  }
+
   HasBuffer(): boolean
   {
     return this.scan > this.start;
@@ -214,13 +319,27 @@ export class LowLevelTokenizer implements ITokenizer
   GetBuffer(): string
   {
     let start = this.start;
-    this.start = this.scan;
+
+    this.ConsumeToScan();
 
     return this.input.substring(start, this.scan);
+  }
+
+  ConsumeToScan(): void
+  {
+    this.start = this.scan;
+    this.consumed = this.scan;
+  }
+
+  PeekBuffer(): string
+  {
+    return this.input.substring(this.start, this.scan);
   }
 
   private state: LowLevelTokenType;
   private start: number;
   private scan: number;
+  private consumed: number;
   private input: string;
+  private tagLibrary: ITagLibrary;
 }
