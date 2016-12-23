@@ -12,10 +12,11 @@
     "@types/mocha": "^2.2.34",
     "chai": "^3.5.0",
     "mocha": "^3.2.0",
+    "ts-node": "^1.7.2",
     "typescript": "^2.1.4"
   },
   "scripts": {
-    "test": "mocha --require source-map-support/register test"
+    "test": "mocha --compilers ts:typescript-require source-map-support/register test"
   },
   "repository": {
     "type": "git",
