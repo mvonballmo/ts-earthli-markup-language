@@ -1,73 +1,8 @@
-export enum LowLevelTokenType
-{
-  Text,
-  NewLine,
-  OpenTag,
-  SeekingAttributeKey,
-  SeekingAttributeSeparator,
-  SeekingAttributeValue,
-  AttributeKey,
-  AttributeValue,
-  CloseTag,
-  Error
-}
 
-export class LowLevelToken
-{
-  constructor(type: LowLevelTokenType, value: string)
-  {
-    this.Type = type;
-    this.Value = value;
-  }
-
-  Type: LowLevelTokenType;
-
-  Value: string;
-
-  Line: number;
-
-  Column: number;
-}
-
-export interface ITagDefinition
-{
-  Name: string;
-}
-
-export class TagDefinition implements ITagDefinition
-{
-  constructor(name: string)
-  {
-    this.Name = name;
-  }
-
-  Name: string;
-}
-
-export interface ITagLibrary
-{
-  Get(name: string): ITagDefinition;
-}
-
-export class TagLibrary implements ITagLibrary
-{
-  Add(tagDefinition: ITagDefinition): void
-  {
-    this.tags[tagDefinition.Name] = tagDefinition;
-  }
-
-  Get(name: string): ITagDefinition
-  {
-    return this.tags[name];
-  }
-
-  private tags: {[key:string]: ITagDefinition} = {};
-}
-
-export interface ITokenizer
-{
-  GetNext(): LowLevelToken;
-}
+import {LowLevelTokenType} from "./LowLevelTokenType";
+import {LowLevelToken} from "./LowLevelToken";
+import {ITagLibrary} from "./ITagLibrary";
+import {ITokenizer} from "./ITokenizer";
 
 export class LowLevelTokenizer implements ITokenizer
 {

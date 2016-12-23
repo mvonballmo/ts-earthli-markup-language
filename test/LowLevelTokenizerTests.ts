@@ -1,6 +1,10 @@
-import { ITokenizer, LowLevelTokenizer, LowLevelTokenType, TagDefinition, TagLibrary } from '../lib/LowLevelTokenizer';
 
 import {expect} from 'chai';
+import {ITokenizer} from "../lib/ITokenizer";
+import {TagLibrary} from "../lib/TagLibrary";
+import {TagDefinition} from "../lib/TagDefinition";
+import {LowLevelTokenizer} from "../lib/LowLevelTokenizer";
+import {LowLevelTokenType} from "../lib/LowLevelTokenType";
 
 describe('LowLevelTokenizer', function()
 {
@@ -283,7 +287,7 @@ describe('LowLevelTokenizer', function()
       assertToken(tokenizer, LowLevelTokenType.NewLine, "", 0, 1);
       assertToken(tokenizer, LowLevelTokenType.Text, "B", 1, 0);
       assertDone(tokenizer);
-    })
+    });
     it('simple body', function()
     {
       let tokenizer = createTokenizer(`
@@ -312,7 +316,7 @@ This is a lot of text
       assertToken(tokenizer, LowLevelTokenType.CloseTag, "i", 3, 39);
       assertToken(tokenizer, LowLevelTokenType.CloseTag, "tag", 3, 43);
       assertDone(tokenizer);
-    })
+    });
     it('structured nested tags', function()
     {
       let tokenizer = createTokenizer(`
