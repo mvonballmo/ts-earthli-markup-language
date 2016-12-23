@@ -16,7 +16,7 @@
     "typescript": "^2.1.4"
   },
   "scripts": {
-    "test": "mocha --compilers ts:typescript-require source-map-support/register test"
+    "test": "mocha --require ts-node/register source-map-support/register test"
   },
   "repository": {
     "type": "git",
