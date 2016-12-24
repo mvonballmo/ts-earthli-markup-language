@@ -17,7 +17,7 @@ export class LowLevelTokenizer implements ITokenizer
     this.state = LowLevelTokenType.Text;
   }
 
-  GetNext(): LowLevelToken
+  GetNext()
   {
     while (this.scan < this.input.length)
     {
@@ -32,7 +32,7 @@ export class LowLevelTokenizer implements ITokenizer
     return this.CreateFinalToken();
   }
 
-  private HandleChar(char: string): LowLevelToken
+  private HandleChar(char: string)
   {
     switch (this.state)
     {
@@ -59,7 +59,7 @@ export class LowLevelTokenizer implements ITokenizer
     }
   }
 
-  private HandleText(char: string): LowLevelToken
+  private HandleText(char: string)
   {
     switch (char)
     {
@@ -110,7 +110,7 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleNewLine(char: string): LowLevelToken
+  private HandleNewLine(char: string)
   {
     this.SwitchStateAndMoveNext(LowLevelTokenType.Text);
 
@@ -125,7 +125,7 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleOpenTag(char: string): LowLevelToken
+  private HandleOpenTag(char: string)
   {
     switch (char)
     {
@@ -180,7 +180,7 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleSeekingAttributeKey(char: string): LowLevelToken
+  private HandleSeekingAttributeKey(char: string)
   {
     switch (char)
     {
@@ -209,7 +209,7 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleSeekingAttributeSeparator(char: string): LowLevelToken
+  private HandleSeekingAttributeSeparator(char: string)
   {
     switch (char)
     {
@@ -239,7 +239,7 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleSeekingAttributeValue(char: string): LowLevelToken
+  private HandleSeekingAttributeValue(char: string)
   {
     switch (char)
     {
@@ -271,7 +271,7 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleAttributeKey(char: string): LowLevelToken
+  private HandleAttributeKey(char: string)
   {
     switch (char)
     {
@@ -300,7 +300,7 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleAttributeValue(char: string): LowLevelToken
+  private HandleAttributeValue(char: string)
   {
     switch (char)
     {
@@ -313,7 +313,7 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleCloseTag(char: string): LowLevelToken
+  private HandleCloseTag(char: string)
   {
     switch (char)
     {
@@ -344,27 +344,27 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private static IsAlpha(char: string): boolean
+  private static IsAlpha(char: string)
   {
     return char.search(/[A-Za-z]+/) != -1;
   }
 
-  private static IsIdentifier(char: string): boolean
+  private static IsIdentifier(char: string)
   {
     return char.search(/[A-Za-z0-9_]+/) != -1;
   }
 
-  private HasBuffer(): boolean
+  private HasBuffer()
   {
     return this.scan > this.start;
   }
 
-  private PeekBuffer(): string
+  private PeekBuffer()
   {
     return this.input.substring(this.start, this.scan);
   }
 
-  private GetBuffer(): string
+  private GetBuffer()
   {
     let start = this.start;
 
@@ -383,7 +383,7 @@ export class LowLevelTokenizer implements ITokenizer
     return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
   }
 
-  private CreateFinalToken(): LowLevelToken
+  private CreateFinalToken()
   {
     this.start = this.consumed;
 
@@ -417,7 +417,7 @@ export class LowLevelTokenizer implements ITokenizer
     return result;
   }
 
-  private SwitchStateAndConsume(tokenType: LowLevelTokenType): void
+  private SwitchStateAndConsume(tokenType: LowLevelTokenType)
   {
     this.SwitchStateAndMoveNext(tokenType);
     this.ConsumeToScan();
@@ -429,7 +429,7 @@ export class LowLevelTokenizer implements ITokenizer
     this.consumed = this.scan;
   }
 
-  private SwitchStateAndMoveNext(state: LowLevelTokenType): void
+  private SwitchStateAndMoveNext(state: LowLevelTokenType)
   {
     this.state = state;
     this.MoveNext();
