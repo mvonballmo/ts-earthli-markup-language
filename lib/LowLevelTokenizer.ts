@@ -54,6 +54,8 @@ export class LowLevelTokenizer implements ITokenizer
         return this.HandleAttributeKey(char);
       case LowLevelTokenType.AttributeValue:
         return this.HandleAttributeValue(char);
+      case LowLevelTokenType.Error:
+        return this.HandleError(char);
       default:
         throw new Error(`Unexpected state: ${this.state}`);
     }
@@ -199,9 +201,9 @@ export class LowLevelTokenizer implements ITokenizer
         }
         else
         {
-          this.RecoverFromTagError();
+          this.SetState(LowLevelTokenType.Error);
 
-          return this.CreateCurrentErrorToken();
+          return this.CreateCurrentToken();
         }
     }
 
@@ -229,9 +231,9 @@ export class LowLevelTokenizer implements ITokenizer
         break;
       default:
       {
-        this.RecoverFromTagError();
+        this.SetState(LowLevelTokenType.Error);
 
-        return this.CreateCurrentErrorToken();
+        return this.CreateCurrentToken();
       }
     }
 
@@ -259,11 +261,9 @@ export class LowLevelTokenizer implements ITokenizer
         break;
       default:
         {
-          this.RecoverFromTagError();
+          this.SetState(LowLevelTokenType.Error);
 
-          this.SetState(LowLevelTokenType.Text);
-
-          return this.CreateCurrentErrorToken();
+          return this.CreateCurrentToken();
         }
     }
 
@@ -285,10 +285,9 @@ export class LowLevelTokenizer implements ITokenizer
       default:
         if (!LowLevelTokenizer.IsIdentifier(char))
         {
-          this.RecoverFromTagError();
-          this.SetState(LowLevelTokenType.Text);
+          this.SetState(LowLevelTokenType.Error);
 
-          return this.CreateCurrentErrorToken();
+          return this.CreateCurrentToken();
         }
         else
         {
@@ -343,6 +342,21 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
+  private HandleError(char: string)
+  {
+    this.MoveNext();
+
+    switch (char)
+    {
+      case Characters.GreaterThan:
+        this.ConsumeToScan();
+        this.SetState(LowLevelTokenType.Text);
+        break;
+    }
+
+    return <LowLevelToken>null;
+  }
+
   private static IsAlpha(char: string)
   {
     return char.search(/[A-Za-z]+/) != -1;
@@ -377,11 +391,6 @@ export class LowLevelTokenizer implements ITokenizer
     return new LowLevelToken(this.state, this.GetBuffer());
   }
 
-  private CreateCurrentErrorToken()
-  {
-    return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
-  }
-
   private CreateFinalToken()
   {
     this.start = this.consumed;
@@ -396,7 +405,7 @@ export class LowLevelTokenizer implements ITokenizer
       {
         this.SetState(LowLevelTokenType.Text);
 
-        return this.CreateCurrentErrorToken();
+        return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
       }
       default:
       {
@@ -445,27 +454,6 @@ export class LowLevelTokenizer implements ITokenizer
   private MoveNext()
   {
     this.scan += 1;
-  }
-
-  private RecoverFromTagError()
-  {
-    this.ConsumeToChar(Characters.GreaterThan);
-  }
-
-  private ConsumeToChar(charToSeek: string)
-  {
-    while (this.scan < this.input.length)
-    {
-      let char = this.input.charAt(this.scan);
-
-      this.scan += 1;
-
-      if (char == charToSeek)
-      {
-        this.ConsumeToScan();
-        break;
-      }
-    }
   }
 
   private state: LowLevelTokenType;
