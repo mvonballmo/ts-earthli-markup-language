@@ -137,13 +137,12 @@ export class LowLevelTokenizer implements ITokenizer
           return this.SwitchStateAndCreateToken(LowLevelTokenType.Text);
         }
 
-        // Switch to processing text, including previous character
         this.start -= 1;
         this.SwitchStateAndMoveNext(LowLevelTokenType.Text);
         break;
       }
       case Characters.LessThan:
-        this.start = this.scan;
+        this.ConsumeToScan();
         this.MoveNext();
         break;
       case Characters.Slash:
