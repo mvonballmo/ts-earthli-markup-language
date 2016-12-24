@@ -101,6 +101,29 @@ describe('LowLevelTokenizer', function()
       assertToken(tokenizer, LowLevelTokenType.Text, "< tag>", 0, 0);
       assertDone(tokenizer);
     });
+    it('less than sign with tab', function()
+    {
+      let tokenizer = createTokenizer("<\ttag>");
+
+      assertToken(tokenizer, LowLevelTokenType.Text, "< tag>", 0, 0);
+      assertDone(tokenizer);
+    });
+    it('less than sign with newline', function()
+    {
+      let tokenizer = createTokenizer("<\ntag>");
+
+      assertToken(tokenizer, LowLevelTokenType.Text, "< tag>", 0, 0);
+      assertDone(tokenizer);
+    });
+    it('less than sign with CR LF', function()
+    {
+      let tokenizer = createTokenizer("<\r\ntag>");
+
+      assertToken(tokenizer, LowLevelTokenType.Text, "<", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.NewLine, "", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.Text, "tag>", 0, 0);
+      assertDone(tokenizer);
+    });
     it('end tag', function()
     {
       let tokenizer = createTokenizer("</tag>");
@@ -210,9 +233,36 @@ describe('LowLevelTokenizer', function()
 
       assertDone(tokenizer);
     });
-    it('start tag with attribute and whitespace', function()
+    it('start tag with attribute and spaces', function()
     {
       let tokenizer = createTokenizer("<tag    attr   =   \"value\"   >");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5);
+      assertToken(tokenizer, LowLevelTokenType.AttributeValue, "value", 0, 11);
+      assertDone(tokenizer);
+    });
+    it('start tag with attribute and tabs', function()
+    {
+      let tokenizer = createTokenizer("<tag\t\t\tattr\t\t\t=\t\t\t\"value\"\t\t\t>");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5);
+      assertToken(tokenizer, LowLevelTokenType.AttributeValue, "value", 0, 11);
+      assertDone(tokenizer);
+    });
+    it('start tag with attribute and newlines', function()
+    {
+      let tokenizer = createTokenizer("<tag\n\n\nattr\n\n\n=\n\n\n\"value\"\n\n\n>");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5);
+      assertToken(tokenizer, LowLevelTokenType.AttributeValue, "value", 0, 11);
+      assertDone(tokenizer);
+    });
+    it('start tag with attribute and CR LF', function()
+    {
+      let tokenizer = createTokenizer("<tag\r\n\r\n\r\nattr\r\n\r\n\r\n=\r\n\r\n\r\n\"value\"\r\n\r\n\r\n\>");
 
       assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
       assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5);
@@ -243,6 +293,16 @@ describe('LowLevelTokenizer', function()
       assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
       assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5);
       assertToken(tokenizer, LowLevelTokenType.Error, "", 0, 10);
+      assertDone(tokenizer);
+    });
+    it('attribute with value without quotes and text', function()
+    {
+      let tokenizer = createTokenizer("<tag attr=value>Text");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5);
+      assertToken(tokenizer, LowLevelTokenType.Error, "", 0, 10);
+      assertToken(tokenizer, LowLevelTokenType.Text, "Text", 0, 17);
       assertDone(tokenizer);
     });
     it('attribute without value and text and end tag', function()

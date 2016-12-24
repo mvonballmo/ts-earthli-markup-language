@@ -1,4 +1,5 @@
 
+import {Characters} from "./Characters";
 import {LowLevelTokenType} from "./LowLevelTokenType";
 import {LowLevelToken} from "./LowLevelToken";
 import {ITagLibrary} from "./ITagLibrary";
@@ -62,7 +63,7 @@ export class LowLevelTokenizer implements ITokenizer
   {
     switch (char)
     {
-      case "\n":
+      case Characters.NewLine:
         if (this.HasBuffer())
         {
           return this.CreateCurrentToken();
@@ -73,7 +74,7 @@ export class LowLevelTokenizer implements ITokenizer
           this.ConsumeToScan();
           return new LowLevelToken(LowLevelTokenType.NewLine, "");
         }
-      case "\r":
+      case Characters.CarriageReturn:
       {
         if (this.HasBuffer())
         {
@@ -85,7 +86,7 @@ export class LowLevelTokenizer implements ITokenizer
         }
         break;
       }
-      case "<":
+      case Characters.LessThan:
       {
         if (this.HasBuffer())
         {
@@ -115,7 +116,7 @@ export class LowLevelTokenizer implements ITokenizer
 
     switch (char)
     {
-      case "\n":
+      case Characters.NewLine:
         this.ConsumeToScan();
 
         return new LowLevelToken(LowLevelTokenType.NewLine, "");
@@ -128,7 +129,7 @@ export class LowLevelTokenizer implements ITokenizer
   {
     switch (char)
     {
-      case ">":
+      case Characters.GreaterThan:
       {
         let tagName = this.PeekBuffer();
         if (this.tagLibrary.Get(tagName) != null)
@@ -141,17 +142,18 @@ export class LowLevelTokenizer implements ITokenizer
         this.SwitchStateAndMoveNext(LowLevelTokenType.Text);
         break;
       }
-      case "<":
+      case Characters.LessThan:
         this.start = this.scan;
         this.MoveNext();
         break;
-      case "/":
+      case Characters.Slash:
         this.SwitchStateAndMoveNext(LowLevelTokenType.CloseTag);
         this.start = this.scan;
         break;
-      case " ":
-      case "\n":
-      case "\r":
+      case Characters.Space:
+      case Characters.Tab:
+      case Characters.NewLine:
+      case Characters.CarriageReturn:
         if (!this.HasBuffer())
         {
           this.start -= 1;
@@ -182,12 +184,13 @@ export class LowLevelTokenizer implements ITokenizer
   {
     switch (char)
     {
-      case ">":
+      case Characters.GreaterThan:
         this.SwitchStateAndConsume(LowLevelTokenType.Text);
         break;
-      case " ":
-      case "\n":
-      case "\r":
+      case Characters.Space:
+      case Characters.Tab:
+      case Characters.NewLine:
+      case Characters.CarriageReturn:
         this.MoveNext();
         break;
       default:
@@ -210,15 +213,16 @@ export class LowLevelTokenizer implements ITokenizer
   {
     switch (char)
     {
-      case ">":
+      case Characters.GreaterThan:
         let value = this.GetBuffer();
 
         this.SwitchStateAndConsume(LowLevelTokenType.Text);
 
         return new LowLevelToken(LowLevelTokenType.Error, value);
-      case " ":
-      case "\n":
-      case "\r":
+      case Characters.Space:
+      case Characters.Tab:
+      case Characters.NewLine:
+      case Characters.CarriageReturn:
         this.MoveNext();
         break;
       case "=":
@@ -226,7 +230,7 @@ export class LowLevelTokenizer implements ITokenizer
         break;
       default:
       {
-        this.ConsumeToChar(">");
+        this.ConsumeToChar(Characters.GreaterThan);
 
         return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
       }
@@ -239,26 +243,26 @@ export class LowLevelTokenizer implements ITokenizer
   {
     switch (char)
     {
-      case ">":
+      case Characters.GreaterThan:
         let value = this.GetBuffer();
 
         this.SwitchStateAndConsume(LowLevelTokenType.Text);
 
         return new LowLevelToken(LowLevelTokenType.Error, value);
-      case " ":
-      case "\n":
-      case "\r":
+      case Characters.Space:
+      case Characters.Tab:
+      case Characters.NewLine:
+      case Characters.CarriageReturn:
         this.MoveNext();
         break;
-      case "\"":
+      case Characters.DoubleQuote:
         this.SwitchStateAndConsume(LowLevelTokenType.AttributeValue);
         break;
       default:
         {
-          this.ConsumeToChar(">");
+          this.ConsumeToChar(Characters.GreaterThan);
 
-          // TODO What the hell?
-          this.state = 1;
+          this.state = LowLevelTokenType.Text;
 
           return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
         }
@@ -271,17 +275,18 @@ export class LowLevelTokenizer implements ITokenizer
   {
     switch (char)
     {
-      case "=":
+      case Characters.Equals:
         return this.SwitchStateAndCreateToken(LowLevelTokenType.SeekingAttributeValue);
-      case " ":
-      case "\n":
-      case "\r":
+      case Characters.Space:
+      case Characters.Tab:
+      case Characters.NewLine:
+      case Characters.CarriageReturn:
         this.MoveNext();
         break;
       default:
         if (!LowLevelTokenizer.IsIdentifier(char))
         {
-          this.ConsumeToChar(">");
+          this.ConsumeToChar(Characters.GreaterThan);
           this.state = LowLevelTokenType.Text;
 
           return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
@@ -299,7 +304,7 @@ export class LowLevelTokenizer implements ITokenizer
   {
     switch (char)
     {
-      case "\"":
+      case Characters.DoubleQuote:
         return this.SwitchStateAndCreateToken(LowLevelTokenType.SeekingAttributeKey);
       default:
         this.MoveNext();
@@ -312,7 +317,7 @@ export class LowLevelTokenizer implements ITokenizer
   {
     switch (char)
     {
-      case ">":
+      case Characters.GreaterThan:
       {
         let tagName = this.PeekBuffer();
         if (this.tagLibrary.Get(tagName) != null)
