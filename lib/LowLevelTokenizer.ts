@@ -163,7 +163,7 @@ export class LowLevelTokenizer implements ITokenizer
         {
           let token = this.CreateCurrentToken();
 
-          this.state = LowLevelTokenType.SeekingAttributeKey;
+          this.SetState(LowLevelTokenType.SeekingAttributeKey);
 
           return token;
         }
@@ -172,7 +172,7 @@ export class LowLevelTokenizer implements ITokenizer
         if (!LowLevelTokenizer.IsIdentifier(char))
         {
           this.start -= 1;
-          this.state = LowLevelTokenType.Text;
+          this.SetState(LowLevelTokenType.Text);
         }
     }
 
@@ -195,7 +195,7 @@ export class LowLevelTokenizer implements ITokenizer
       default:
         if (LowLevelTokenizer.IsIdentifier(char))
         {
-          this.state = LowLevelTokenType.AttributeKey;
+          this.SetState(LowLevelTokenType.AttributeKey);
         }
         else
         {
@@ -261,7 +261,7 @@ export class LowLevelTokenizer implements ITokenizer
         {
           this.RecoverFromTagError();
 
-          this.state = LowLevelTokenType.Text;
+          this.SetState(LowLevelTokenType.Text);
 
           return this.CreateCurrentErrorToken();
         }
@@ -286,7 +286,7 @@ export class LowLevelTokenizer implements ITokenizer
         if (!LowLevelTokenizer.IsIdentifier(char))
         {
           this.RecoverFromTagError();
-          this.state = LowLevelTokenType.Text;
+          this.SetState(LowLevelTokenType.Text);
 
           return this.CreateCurrentErrorToken();
         }
@@ -335,7 +335,7 @@ export class LowLevelTokenizer implements ITokenizer
         if (!LowLevelTokenizer.IsAlpha(char))
         {
           this.start -= 1;
-          this.state = LowLevelTokenType.Text;
+          this.SetState(LowLevelTokenType.Text);
         }
       }
     }
@@ -393,8 +393,11 @@ export class LowLevelTokenizer implements ITokenizer
       case LowLevelTokenType.SeekingAttributeKey:
       case LowLevelTokenType.SeekingAttributeSeparator:
       case LowLevelTokenType.SeekingAttributeValue:
-        this.state = LowLevelTokenType.Text;
+      {
+        this.SetState(LowLevelTokenType.Text);
+
         return this.CreateCurrentErrorToken();
+      }
       default:
       {
         if (this.HasBuffer())
@@ -430,8 +433,13 @@ export class LowLevelTokenizer implements ITokenizer
 
   private SwitchStateAndMoveNext(state: LowLevelTokenType)
   {
-    this.state = state;
+    this.SetState(state);
     this.MoveNext();
+  }
+
+  private SetState(state: LowLevelTokenType)
+  {
+    this.state = state;
   }
 
   private MoveNext()
