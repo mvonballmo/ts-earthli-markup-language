@@ -200,9 +200,9 @@ export class LowLevelTokenizer implements ITokenizer
         }
         else
         {
-          this.ConsumeToChar(">");
+          this.RecoverFromTagError();
 
-          return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
+          return this.CreateCurrentErrorToken();
         }
     }
 
@@ -230,9 +230,9 @@ export class LowLevelTokenizer implements ITokenizer
         break;
       default:
       {
-        this.ConsumeToChar(Characters.GreaterThan);
+        this.RecoverFromTagError();
 
-        return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
+        return this.CreateCurrentErrorToken();
       }
     }
 
@@ -260,11 +260,11 @@ export class LowLevelTokenizer implements ITokenizer
         break;
       default:
         {
-          this.ConsumeToChar(Characters.GreaterThan);
+          this.RecoverFromTagError();
 
           this.state = LowLevelTokenType.Text;
 
-          return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
+          return this.CreateCurrentErrorToken();
         }
     }
 
@@ -286,10 +286,10 @@ export class LowLevelTokenizer implements ITokenizer
       default:
         if (!LowLevelTokenizer.IsIdentifier(char))
         {
-          this.ConsumeToChar(Characters.GreaterThan);
+          this.RecoverFromTagError();
           this.state = LowLevelTokenType.Text;
 
-          return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
+          return this.CreateCurrentErrorToken();
         }
         else
         {
@@ -344,9 +344,43 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
+  private static IsAlpha(char: string): boolean
+  {
+    return char.search(/[A-Za-z]+/) != -1;
+  }
+
+  private static IsIdentifier(char: string): boolean
+  {
+    return char.search(/[A-Za-z0-9_]+/) != -1;
+  }
+
+  private HasBuffer(): boolean
+  {
+    return this.scan > this.start;
+  }
+
+  private PeekBuffer(): string
+  {
+    return this.input.substring(this.start, this.scan);
+  }
+
+  private GetBuffer(): string
+  {
+    let start = this.start;
+
+    this.ConsumeToScan();
+
+    return this.input.substring(start, this.scan);
+  }
+
   private CreateCurrentToken()
   {
     return new LowLevelToken(this.state, this.GetBuffer());
+  }
+
+  private CreateCurrentErrorToken()
+  {
+    return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
   }
 
   private CreateFinalToken(): LowLevelToken
@@ -361,7 +395,7 @@ export class LowLevelTokenizer implements ITokenizer
       case LowLevelTokenType.SeekingAttributeSeparator:
       case LowLevelTokenType.SeekingAttributeValue:
         this.state = LowLevelTokenType.Text;
-        return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
+        return this.CreateCurrentErrorToken();
       default:
       {
         if (this.HasBuffer())
@@ -389,7 +423,13 @@ export class LowLevelTokenizer implements ITokenizer
     this.ConsumeToScan();
   }
 
-  private SwitchStateAndMoveNext(state: LowLevelTokenType)
+  private ConsumeToScan(): void
+  {
+    this.start = this.scan;
+    this.consumed = this.scan;
+  }
+
+  private SwitchStateAndMoveNext(state: LowLevelTokenType): void
   {
     this.state = state;
     this.MoveNext();
@@ -400,28 +440,9 @@ export class LowLevelTokenizer implements ITokenizer
     this.scan += 1;
   }
 
-  private static IsAlpha(char: string): boolean
+  private RecoverFromTagError()
   {
-    return char.search(/[A-Za-z]+/) != -1;
-  }
-
-  private static IsIdentifier(char: string): boolean
-  {
-    return char.search(/[A-Za-z0-9_]+/) != -1;
-  }
-
-  private HasBuffer(): boolean
-  {
-    return this.scan > this.start;
-  }
-
-  private GetBuffer(): string
-  {
-    let start = this.start;
-
-    this.ConsumeToScan();
-
-    return this.input.substring(start, this.scan);
+    this.ConsumeToChar(Characters.GreaterThan);
   }
 
   private ConsumeToChar(charToSeek: string)
@@ -438,17 +459,6 @@ export class LowLevelTokenizer implements ITokenizer
         break;
       }
     }
-  }
-
-  private ConsumeToScan(): void
-  {
-    this.start = this.scan;
-    this.consumed = this.scan;
-  }
-
-  private PeekBuffer(): string
-  {
-    return this.input.substring(this.start, this.scan);
   }
 
   private state: LowLevelTokenType;
