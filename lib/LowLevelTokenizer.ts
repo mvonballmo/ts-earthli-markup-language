@@ -28,27 +28,7 @@ export class LowLevelTokenizer implements ITokenizer
       }
     }
 
-    this.start = this.consumed;
-
-    switch (this.state)
-    {
-      case LowLevelTokenType.AttributeKey:
-      case LowLevelTokenType.AttributeValue:
-      case LowLevelTokenType.SeekingAttributeKey:
-      case LowLevelTokenType.SeekingAttributeSeparator:
-      case LowLevelTokenType.SeekingAttributeValue:
-        this.state = LowLevelTokenType.Text;
-        return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
-      default:
-      {
-        if (this.HasBuffer())
-        {
-          return new LowLevelToken(LowLevelTokenType.Text, this.GetBuffer());
-        }
-      }
-    }
-
-    return null;
+    return this.CreateFinalToken();
   }
 
   private HandleChar(char: string): LowLevelToken
@@ -70,7 +50,7 @@ export class LowLevelTokenizer implements ITokenizer
       case LowLevelTokenType.CloseTag:
         return this.HandleCloseTag(char);
       case LowLevelTokenType.AttributeKey:
-        return this.HandleAttributeName(char);
+        return this.HandleAttributeKey(char);
       case LowLevelTokenType.AttributeValue:
         return this.HandleAttributeValue(char);
       default:
@@ -85,7 +65,7 @@ export class LowLevelTokenizer implements ITokenizer
       case "\n":
         if (this.HasBuffer())
         {
-          return new LowLevelToken(LowLevelTokenType.Text, this.GetBuffer())
+          return this.CreateCurrentToken();
         }
         else
         {
@@ -97,7 +77,7 @@ export class LowLevelTokenizer implements ITokenizer
       {
         if (this.HasBuffer())
         {
-          let result = new LowLevelToken(LowLevelTokenType.Text, this.GetBuffer());
+          let result = this.CreateCurrentToken();
           this.state = LowLevelTokenType.NewLine;
           this.scan += 1;
 
@@ -114,7 +94,7 @@ export class LowLevelTokenizer implements ITokenizer
       {
         if (this.HasBuffer())
         {
-          let result = new LowLevelToken(LowLevelTokenType.Text, this.GetBuffer());
+          let result = this.CreateCurrentToken();
 
           this.state = LowLevelTokenType.OpenTag;
           this.start += 1;
@@ -163,7 +143,7 @@ export class LowLevelTokenizer implements ITokenizer
         let tagName = this.PeekBuffer();
         if (this.tagLibrary.Get(tagName) != null)
         {
-          let result = new LowLevelToken(LowLevelTokenType.OpenTag, this.GetBuffer());
+          let result = this.CreateCurrentToken();
           this.state = LowLevelTokenType.Text;
           this.scan += 1;
           this.ConsumeToScan();
@@ -197,9 +177,11 @@ export class LowLevelTokenizer implements ITokenizer
         }
         else
         {
+          let token = this.CreateCurrentToken();
+
           this.state = LowLevelTokenType.SeekingAttributeKey;
 
-          return new LowLevelToken(LowLevelTokenType.OpenTag, this.GetBuffer());
+          return token;
         }
       default:
         this.scan += 1;
@@ -310,18 +292,18 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleAttributeName(char: string): LowLevelToken
+  private HandleAttributeKey(char: string): LowLevelToken
   {
     switch (char)
     {
       case "=":
-        let value = this.GetBuffer();
+        let token = this.CreateCurrentToken();
 
         this.state = LowLevelTokenType.SeekingAttributeValue;
         this.scan += 1;
         this.ConsumeToScan();
 
-        return new LowLevelToken(LowLevelTokenType.AttributeKey, value);
+        return token;
       case " ":
       case "\n":
       case "\r":
@@ -349,12 +331,12 @@ export class LowLevelTokenizer implements ITokenizer
     switch (char)
     {
       case "\"":
-        let buffer = this.GetBuffer();
+        let token = this.CreateCurrentToken();
         this.state = LowLevelTokenType.SeekingAttributeKey;
         this.scan += 1;
         this.ConsumeToScan();
 
-        return new LowLevelToken(LowLevelTokenType.AttributeValue, buffer);
+        return token;
       default:
         this.scan += 1;
     }
@@ -371,7 +353,7 @@ export class LowLevelTokenizer implements ITokenizer
         let tagName = this.PeekBuffer();
         if (this.tagLibrary.Get(tagName) != null)
         {
-          let result = new LowLevelToken(LowLevelTokenType.CloseTag, this.GetBuffer());
+          let result = this.CreateCurrentToken();
           this.scan += 1;
           this.state = LowLevelTokenType.Text;
           this.ConsumeToScan();
@@ -391,6 +373,36 @@ export class LowLevelTokenizer implements ITokenizer
         {
           this.start -= 1;
           this.state = LowLevelTokenType.Text;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  private CreateCurrentToken()
+  {
+    return new LowLevelToken(this.state, this.GetBuffer());
+  }
+
+  private CreateFinalToken(): LowLevelToken
+  {
+    this.start = this.consumed;
+
+    switch (this.state)
+    {
+      case LowLevelTokenType.AttributeKey:
+      case LowLevelTokenType.AttributeValue:
+      case LowLevelTokenType.SeekingAttributeKey:
+      case LowLevelTokenType.SeekingAttributeSeparator:
+      case LowLevelTokenType.SeekingAttributeValue:
+        this.state = LowLevelTokenType.Text;
+        return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
+      default:
+      {
+        if (this.HasBuffer())
+        {
+          return new LowLevelToken(LowLevelTokenType.Text, this.GetBuffer());
         }
       }
     }
