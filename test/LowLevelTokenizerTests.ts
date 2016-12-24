@@ -13,6 +13,7 @@ describe('LowLevelTokenizer', function()
     let tagLibrary = new TagLibrary();
 
     tagLibrary.Add(new TagDefinition("tag"));
+    tagLibrary.Add(new TagDefinition("tag_2"));
     tagLibrary.Add(new TagDefinition("i"));
 
     return new LowLevelTokenizer(tagLibrary, input);
@@ -93,11 +94,25 @@ describe('LowLevelTokenizer', function()
       assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
       assertDone(tokenizer);
     });
+    it('less than sign', function()
+    {
+      let tokenizer = createTokenizer("< tag>");
+
+      assertToken(tokenizer, LowLevelTokenType.Text, "< tag>", 0, 0);
+      assertDone(tokenizer);
+    });
     it('end tag', function()
     {
       let tokenizer = createTokenizer("</tag>");
 
       assertToken(tokenizer, LowLevelTokenType.CloseTag, "tag", 0, 0);
+      assertDone(tokenizer);
+    });
+    it('end tag', function()
+    {
+      let tokenizer = createTokenizer("</tag  6>");
+
+      assertToken(tokenizer, LowLevelTokenType.Text, "</tag  6>", 0, 0);
       assertDone(tokenizer);
     });
     it('invalid end tag', function()
@@ -127,6 +142,24 @@ describe('LowLevelTokenizer', function()
 
       assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
       assertToken(tokenizer, LowLevelTokenType.Text, "Text", 0, 5);
+      assertDone(tokenizer);
+    });
+    it('identifiers are legal tag names', function()
+    {
+      let tokenizer = createTokenizer("<tag_2>Text");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag_2", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.Text, "Text", 0, 7);
+      assertDone(tokenizer);
+    });
+    it('identifiers are legal attribute keys', function()
+    {
+      let tokenizer = createTokenizer("<tag attr_2=\"\">Text");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5);
+      assertToken(tokenizer, LowLevelTokenType.AttributeValue, "", 0, 11);
+      assertToken(tokenizer, LowLevelTokenType.Text, "Text", 0, 14);
       assertDone(tokenizer);
     });
     it('end tag with text', function()

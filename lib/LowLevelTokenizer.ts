@@ -60,7 +60,7 @@ export class LowLevelTokenizer implements ITokenizer
       case LowLevelTokenType.NewLine:
         return this.HandleNewLine(char);
       case LowLevelTokenType.OpenTag:
-        return this.HandleStartOpenTag(char);
+        return this.HandleOpenTag(char);
       case LowLevelTokenType.SeekingAttributeKey:
         return this.HandleSeekingAttributeKey(char);
       case LowLevelTokenType.SeekingAttributeSeparator:
@@ -154,7 +154,7 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleStartOpenTag(char: string): LowLevelToken
+  private HandleOpenTag(char: string): LowLevelToken
   {
     switch (char)
     {
@@ -188,11 +188,22 @@ export class LowLevelTokenizer implements ITokenizer
       case " ":
       case "\n":
       case "\r":
-        this.state = LowLevelTokenType.SeekingAttributeKey;
-        return new LowLevelToken(LowLevelTokenType.OpenTag, this.GetBuffer());
+        if (!this.HasBuffer())
+        {
+          this.scan += 1;
+          this.start -= 1;
+          this.state = LowLevelTokenType.Text;
+          break;
+        }
+        else
+        {
+          this.state = LowLevelTokenType.SeekingAttributeKey;
+
+          return new LowLevelToken(LowLevelTokenType.OpenTag, this.GetBuffer());
+        }
       default:
         this.scan += 1;
-        if (!LowLevelTokenizer.IsAlpha(char))
+        if (!LowLevelTokenizer.IsIdentifier(char))
         {
           this.start -= 1;
           this.state = LowLevelTokenType.Text;
@@ -299,42 +310,6 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleCloseTag(char: string): LowLevelToken
-  {
-    switch (char)
-    {
-      case ">":
-      {
-        let tagName = this.PeekBuffer();
-        if (this.tagLibrary.Get(tagName) != null)
-        {
-          let result = new LowLevelToken(LowLevelTokenType.CloseTag, this.GetBuffer());
-          this.scan += 1;
-          this.state = LowLevelTokenType.Text;
-          this.ConsumeToScan();
-          return result;
-        }
-
-        // Switch to processing text, including previous character
-        this.scan += 1;
-        this.start -= 1;
-        this.state = LowLevelTokenType.Text;
-        break;
-      }
-      default:
-      {
-        this.scan += 1;
-        if (!LowLevelTokenizer.IsAlpha(char))
-        {
-          this.start -= 1;
-          this.state = LowLevelTokenType.Text;
-        }
-      }
-    }
-
-    return null;
-  }
-
   private HandleAttributeName(char: string): LowLevelToken
   {
     switch (char)
@@ -382,6 +357,42 @@ export class LowLevelTokenizer implements ITokenizer
         return new LowLevelToken(LowLevelTokenType.AttributeValue, buffer);
       default:
         this.scan += 1;
+    }
+
+    return null;
+  }
+
+  private HandleCloseTag(char: string): LowLevelToken
+  {
+    switch (char)
+    {
+      case ">":
+      {
+        let tagName = this.PeekBuffer();
+        if (this.tagLibrary.Get(tagName) != null)
+        {
+          let result = new LowLevelToken(LowLevelTokenType.CloseTag, this.GetBuffer());
+          this.scan += 1;
+          this.state = LowLevelTokenType.Text;
+          this.ConsumeToScan();
+          return result;
+        }
+
+        // Switch to processing text, including previous character
+        this.scan += 1;
+        this.start -= 1;
+        this.state = LowLevelTokenType.Text;
+        break;
+      }
+      default:
+      {
+        this.scan += 1;
+        if (!LowLevelTokenizer.IsAlpha(char))
+        {
+          this.start -= 1;
+          this.state = LowLevelTokenType.Text;
+        }
+      }
     }
 
     return null;
