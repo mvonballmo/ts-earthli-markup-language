@@ -69,7 +69,7 @@ export class LowLevelTokenizer implements ITokenizer
         }
         else
         {
-          this.scan += 1;
+          this.MoveNext();
           this.ConsumeToScan();
           return new LowLevelToken(LowLevelTokenType.NewLine, "");
         }
@@ -102,7 +102,7 @@ export class LowLevelTokenizer implements ITokenizer
       }
       default:
       {
-        this.scan += 1;
+        this.MoveNext();
       }
     }
 
@@ -137,14 +137,13 @@ export class LowLevelTokenizer implements ITokenizer
         }
 
         // Switch to processing text, including previous character
-        this.scan += 1;
         this.start -= 1;
-        this.state = LowLevelTokenType.Text;
+        this.SwitchStateAndMoveNext(LowLevelTokenType.Text);
         break;
       }
       case "<":
         this.start = this.scan;
-        this.scan += 1;
+        this.MoveNext();
         break;
       case "/":
         this.SwitchStateAndMoveNext(LowLevelTokenType.CloseTag);
@@ -168,7 +167,7 @@ export class LowLevelTokenizer implements ITokenizer
           return token;
         }
       default:
-        this.scan += 1;
+        this.MoveNext();
         if (!LowLevelTokenizer.IsIdentifier(char))
         {
           this.start -= 1;
@@ -189,7 +188,7 @@ export class LowLevelTokenizer implements ITokenizer
       case " ":
       case "\n":
       case "\r":
-        this.scan += 1;
+        this.MoveNext();
         break;
       default:
         if (LowLevelTokenizer.IsIdentifier(char))
@@ -220,7 +219,7 @@ export class LowLevelTokenizer implements ITokenizer
       case " ":
       case "\n":
       case "\r":
-        this.scan += 1;
+        this.MoveNext();
         break;
       case "=":
         this.SwitchStateAndConsume(LowLevelTokenType.SeekingAttributeValue);
@@ -249,7 +248,7 @@ export class LowLevelTokenizer implements ITokenizer
       case " ":
       case "\n":
       case "\r":
-        this.scan += 1;
+        this.MoveNext();
         break;
       case "\"":
         this.SwitchStateAndConsume(LowLevelTokenType.AttributeValue);
@@ -277,7 +276,7 @@ export class LowLevelTokenizer implements ITokenizer
       case " ":
       case "\n":
       case "\r":
-        this.scan += 1;
+        this.MoveNext();
         break;
       default:
         if (!LowLevelTokenizer.IsIdentifier(char))
@@ -289,7 +288,7 @@ export class LowLevelTokenizer implements ITokenizer
         }
         else
         {
-          this.scan += 1;
+          this.MoveNext();
         }
     }
 
@@ -303,7 +302,7 @@ export class LowLevelTokenizer implements ITokenizer
       case "\"":
         return this.SwitchStateAndCreateToken(LowLevelTokenType.SeekingAttributeKey);
       default:
-        this.scan += 1;
+        this.MoveNext();
     }
 
     return null;
@@ -328,7 +327,7 @@ export class LowLevelTokenizer implements ITokenizer
       }
       default:
       {
-        this.scan += 1;
+        this.MoveNext();
         if (!LowLevelTokenizer.IsAlpha(char))
         {
           this.start -= 1;
@@ -388,6 +387,11 @@ export class LowLevelTokenizer implements ITokenizer
   private SwitchStateAndMoveNext(state: LowLevelTokenType)
   {
     this.state = state;
+    this.MoveNext();
+  }
+
+  private MoveNext()
+  {
     this.scan += 1;
   }
 
