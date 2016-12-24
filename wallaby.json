@@ -1,17 +1,12 @@
-module.exports = function (w) {
-    return {
-        files: [
-            'lib/**/*.ts'
-        ],
-
-        tests: [
-            'test/**/*Tests.ts'
-        ],
-
-        testFramework: 'mocha',
-
-        env: {
-            type: 'node'
-        },
-    };
-};
+{
+    "files": [
+        "lib/**/*.ts"
+    ],
+    "tests": [
+        "test/**/*Tests.ts"
+    ],
+    "testFramework": "mocha",
+    "env": {
+        "type": "node"
+    }
+}
