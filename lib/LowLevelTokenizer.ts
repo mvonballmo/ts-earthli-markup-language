@@ -88,13 +88,13 @@ export class LowLevelTokenizer implements ITokenizer
       {
         if (this.HasBuffer())
         {
-          this.start += 1;
+          this.IgnoreFirstCharacter();
 
           return this.SwitchStateAndCreateToken(LowLevelTokenType.OpenTag);
         }
         else
         {
-          this.start += 1;
+          this.IgnoreFirstCharacter();
           this.SwitchStateAndMoveNext(LowLevelTokenType.OpenTag);
           break;
         }
@@ -135,8 +135,7 @@ export class LowLevelTokenizer implements ITokenizer
           return this.SwitchStateAndCreateToken(LowLevelTokenType.Text);
         }
 
-        this.start -= 1;
-        this.SwitchStateAndMoveNext(LowLevelTokenType.Text);
+        this.SwitchToText();
         break;
       }
       case Characters.LessThan:
@@ -144,8 +143,8 @@ export class LowLevelTokenizer implements ITokenizer
         this.MoveNext();
         break;
       case Characters.Slash:
+        this.IgnoreFirstCharacter();
         this.SwitchStateAndMoveNext(LowLevelTokenType.CloseTag);
-        this.start = this.scan;
         break;
       case Characters.Space:
       case Characters.Tab:
@@ -153,8 +152,7 @@ export class LowLevelTokenizer implements ITokenizer
       case Characters.CarriageReturn:
         if (!this.HasBuffer())
         {
-          this.start -= 1;
-          this.SwitchStateAndMoveNext(LowLevelTokenType.Text);
+          this.SwitchToText();
           break;
         }
         else
@@ -167,10 +165,9 @@ export class LowLevelTokenizer implements ITokenizer
         }
       default:
         this.MoveNext();
-        if (!LowLevelTokenizer.IsIdentifier(char))
+        if (!this.IsIdentifier(char))
         {
-          this.start -= 1;
-          this.SetState(LowLevelTokenType.Text);
+          this.SwitchToText();
         }
     }
 
@@ -191,7 +188,7 @@ export class LowLevelTokenizer implements ITokenizer
         this.MoveNext();
         break;
       default:
-        if (LowLevelTokenizer.IsIdentifier(char))
+        if (this.IsIdentifier(char))
         {
           this.SetState(LowLevelTokenType.AttributeKey);
         }
@@ -249,7 +246,7 @@ export class LowLevelTokenizer implements ITokenizer
         this.MoveNext();
         break;
       default:
-        if (!LowLevelTokenizer.IsIdentifier(char))
+        if (!this.IsIdentifier(char))
         {
           this.SetState(LowLevelTokenType.Error);
 
@@ -288,19 +285,15 @@ export class LowLevelTokenizer implements ITokenizer
         {
           return this.SwitchStateAndCreateToken(LowLevelTokenType.Text);
         }
-
-        // Switch to processing text, including previous character
-        this.start -= 1;
-        this.SwitchStateAndMoveNext(LowLevelTokenType.Text);
+        this.SwitchToText();
         break;
       }
       default:
       {
         this.MoveNext();
-        if (!LowLevelTokenizer.IsAlpha(char))
+        if (!this.IsAlpha(char))
         {
-          this.start -= 1;
-          this.SetState(LowLevelTokenType.Text);
+          this.SwitchToText();
         }
       }
     }
@@ -323,12 +316,12 @@ export class LowLevelTokenizer implements ITokenizer
     return <LowLevelToken>null;
   }
 
-  private static IsAlpha(char: string)
+  private IsAlpha(char: string)
   {
     return char.search(/[A-Za-z]+/) != -1;
   }
 
-  private static IsIdentifier(char: string)
+  private IsIdentifier(char: string)
   {
     return char.search(/[A-Za-z0-9_]+/) != -1;
   }
@@ -384,6 +377,12 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
+  private SwitchToText()
+  {
+    this.IncludePreviousCharacter();
+    this.SwitchStateAndMoveNext(LowLevelTokenType.Text);
+  }
+
   private SwitchStateAndCreateToken(tokenType: LowLevelTokenType)
   {
     let result = this.CreateCurrentToken();
@@ -419,6 +418,16 @@ export class LowLevelTokenizer implements ITokenizer
   private MoveNext()
   {
     this.scan += 1;
+  }
+
+  private IgnoreFirstCharacter()
+  {
+    this.start += 1;
+  }
+
+  private IncludePreviousCharacter()
+  {
+    this.start -= 1;
   }
 
   private state: LowLevelTokenType;
