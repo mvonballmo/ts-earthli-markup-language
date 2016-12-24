@@ -87,6 +87,13 @@ describe('LowLevelTokenizer', function()
       assertToken(tokenizer, LowLevelTokenType.NewLine, "", 0, 1);
       assertDone(tokenizer);
     });
+    it('carriage return with text', function()
+    {
+      let tokenizer = createTokenizer("\rText");
+
+      assertToken(tokenizer, LowLevelTokenType.Text, "Text", 0, 1);
+      assertDone(tokenizer);
+    });
     it('start tag', function()
     {
       let tokenizer = createTokenizer("<tag>");
@@ -105,14 +112,21 @@ describe('LowLevelTokenizer', function()
     {
       let tokenizer = createTokenizer("<\ttag>");
 
-      assertToken(tokenizer, LowLevelTokenType.Text, "< tag>", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.Text, "<\ttag>", 0, 0);
+      assertDone(tokenizer);
+    });
+    it('illegal tag', function()
+    {
+      let tokenizer = createTokenizer("<#tag>");
+
+      assertToken(tokenizer, LowLevelTokenType.Text, "<#tag>", 0, 0);
       assertDone(tokenizer);
     });
     it('less than sign with newline', function()
     {
       let tokenizer = createTokenizer("<\ntag>");
 
-      assertToken(tokenizer, LowLevelTokenType.Text, "< tag>", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.Text, "<\ntag>", 0, 0);
       assertDone(tokenizer);
     });
     it('less than sign with CR LF', function()
@@ -277,6 +291,49 @@ describe('LowLevelTokenizer', function()
       assertToken(tokenizer, LowLevelTokenType.Error, "attribute 'attr' does not have a value.", 0, 5);
       assertDone(tokenizer);
     });
+    it('tag with space suffix', function()
+    {
+      let tokenizer = createTokenizer("<tag >");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
+      assertDone(tokenizer);
+    });
+    it('tag with newline suffix', function()
+    {
+      let tokenizer = createTokenizer("<tag\n>");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
+      assertDone(tokenizer);
+    });
+    it('tag with CR suffix', function()
+    {
+      let tokenizer = createTokenizer("<tag\r>");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
+      assertDone(tokenizer);
+    });
+    it('tag with tab suffix', function()
+    {
+      let tokenizer = createTokenizer("<tag\t>");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
+      assertDone(tokenizer);
+    });
+    it('invalid tag name suffix', function()
+    {
+      let tokenizer = createTokenizer("<tag#>");
+
+      assertToken(tokenizer, LowLevelTokenType.Text, "<tag#>", 0, 0);
+      assertDone(tokenizer);
+    });
+    it('invalid attribute name prefix', function()
+    {
+      let tokenizer = createTokenizer("<tag #>");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.Error, "'#' is not a legal attribute character.", 0, 5);
+      assertDone(tokenizer);
+    });
     it('attribute with invalid name', function()
     {
       let tokenizer = createTokenizer("<tag attr*=\"value\">Text");
@@ -298,6 +355,16 @@ describe('LowLevelTokenizer', function()
     it('attribute with value without quotes and text', function()
     {
       let tokenizer = createTokenizer("<tag attr=value>Text");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5);
+      assertToken(tokenizer, LowLevelTokenType.Error, "", 0, 10);
+      assertToken(tokenizer, LowLevelTokenType.Text, "Text", 0, 17);
+      assertDone(tokenizer);
+    });
+    it('attribute with equals but not value', function()
+    {
+      let tokenizer = createTokenizer("<tag attr=>Text");
 
       assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
       assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5);
