@@ -44,8 +44,6 @@ export class LowLevelTokenizer implements ITokenizer
         return this.HandleOpenTag(char);
       case LowLevelTokenType.SeekingAttributeKey:
         return this.HandleSeekingAttributeKey(char);
-      case LowLevelTokenType.SeekingAttributeSeparator:
-        return this.HandleSeekingAttributeSeparator(char);
       case LowLevelTokenType.SeekingAttributeValue:
         return this.HandleSeekingAttributeValue(char);
       case LowLevelTokenType.CloseTag:
@@ -56,8 +54,6 @@ export class LowLevelTokenizer implements ITokenizer
         return this.HandleAttributeValue(char);
       case LowLevelTokenType.Error:
         return this.HandleError(char);
-      default:
-        throw new Error(`Unexpected state: ${this.state}`);
     }
   }
 
@@ -205,36 +201,6 @@ export class LowLevelTokenizer implements ITokenizer
 
           return this.CreateCurrentToken();
         }
-    }
-
-    return null;
-  }
-
-  private HandleSeekingAttributeSeparator(char: string)
-  {
-    switch (char)
-    {
-      case Characters.GreaterThan:
-        let value = this.GetBuffer();
-
-        this.SwitchStateAndConsume(LowLevelTokenType.Text);
-
-        return new LowLevelToken(LowLevelTokenType.Error, value);
-      case Characters.Space:
-      case Characters.Tab:
-      case Characters.NewLine:
-      case Characters.CarriageReturn:
-        this.MoveNext();
-        break;
-      case "=":
-        this.SwitchStateAndConsume(LowLevelTokenType.SeekingAttributeValue);
-        break;
-      default:
-      {
-        this.SetState(LowLevelTokenType.Error);
-
-        return this.CreateCurrentToken();
-      }
     }
 
     return null;
@@ -400,7 +366,6 @@ export class LowLevelTokenizer implements ITokenizer
       case LowLevelTokenType.AttributeKey:
       case LowLevelTokenType.AttributeValue:
       case LowLevelTokenType.SeekingAttributeKey:
-      case LowLevelTokenType.SeekingAttributeSeparator:
       case LowLevelTokenType.SeekingAttributeValue:
       {
         this.SetState(LowLevelTokenType.Text);
