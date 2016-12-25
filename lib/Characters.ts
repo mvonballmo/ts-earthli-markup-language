@@ -1,12 +1,14 @@
-export class Characters
+class CharacterValues
 {
-  static readonly Space = " ";
-  static readonly Tab = "\t";
-  static readonly CarriageReturn = "\r";
-  static readonly NewLine = "\n";
-  static readonly LessThan = "<";
-  static readonly Equals = "=";
-  static readonly DoubleQuote = "\"";
-  static readonly Slash = "/";
-  static readonly GreaterThan = ">";
+  readonly Space = " ";
+  readonly Tab = "\t";
+  readonly CarriageReturn = "\r";
+  readonly NewLine = "\n";
+  readonly LessThan = "<";
+  readonly Equals = "=";
+  readonly DoubleQuote = "\"";
+  readonly Slash = "/";
+  readonly GreaterThan = ">";
 }
+
+export const Characters = new CharacterValues();
