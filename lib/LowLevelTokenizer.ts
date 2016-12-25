@@ -16,136 +16,136 @@ export class LowLevelTokenizer implements ITokenizer
     this.state = LowLevelTokenType.Text;
   }
 
-  GetNext()
+  getNext()
   {
     while (this.scan < this.input.length)
     {
       let char = this.input.charAt(this.scan);
-      let token = this.HandleChar(char);
+      let token = this.handleChar(char);
       if (token != null)
       {
         return token;
       }
     }
 
-    return this.CreateFinalToken();
+    return this.createFinalToken();
   }
 
-  private HandleChar(char: string)
+  private handleChar(char: string)
   {
     switch (this.state)
     {
       case LowLevelTokenType.Text:
-        return this.HandleText(char);
+        return this.handleText(char);
       case LowLevelTokenType.NewLine:
-        return this.HandleNewLine(char);
+        return this.handleNewLine(char);
       case LowLevelTokenType.OpenTag:
-        return this.HandleOpenTag(char);
+        return this.handleOpenTag(char);
       case LowLevelTokenType.SeekingAttributeKey:
-        return this.HandleSeekingAttributeKey(char);
+        return this.handleSeekingAttributeKey(char);
       case LowLevelTokenType.SeekingAttributeSeparator:
-        return this.HandleSeekingAttributeSeparator(char);
+        return this.handleSeekingAttributeSeparator(char);
       case LowLevelTokenType.SeekingAttributeValue:
-        return this.HandleSeekingAttributeValue(char);
+        return this.handleSeekingAttributeValue(char);
       case LowLevelTokenType.CloseTag:
-        return this.HandleCloseTag(char);
+        return this.handleCloseTag(char);
       case LowLevelTokenType.AttributeKey:
-        return this.HandleAttributeKey(char);
+        return this.handleAttributeKey(char);
       case LowLevelTokenType.AttributeValue:
-        return this.HandleAttributeValue(char);
+        return this.handleAttributeValue(char);
       case LowLevelTokenType.Error:
-        return this.HandleError(char);
+        return this.handleError(char);
     }
   }
 
-  private HandleText(char: string)
+  private handleText(char: string)
   {
     switch (char)
     {
       case Characters.NewLine:
       {
-        if (this.HasBuffer())
+        if (this.hasBuffer())
         {
-          return this.CreateToken(LowLevelTokenType.Text);
+          return this.createToken(LowLevelTokenType.Text);
         }
 
-        this.MoveNext();
-        this.ConsumeToScan();
+        this.moveNext();
+        this.updateConsumed();
         return new LowLevelToken(LowLevelTokenType.NewLine, "");
       }
       case Characters.CarriageReturn:
       {
-        if (this.HasBuffer())
+        if (this.hasBuffer())
         {
-          return this.SetStateAndConsumeAndCreateToken(LowLevelTokenType.NewLine);
+          return this.setStateAndConsumeAndCreateToken(LowLevelTokenType.NewLine);
         }
 
-        this.SetStateAndMoveNext(LowLevelTokenType.NewLine);
+        this.setStateAndMoveNext(LowLevelTokenType.NewLine);
         break;
       }
       case Characters.LessThan:
       {
-        if (this.HasBuffer())
+        if (this.hasBuffer())
         {
-          let result = this.CreateToken(LowLevelTokenType.Text);
+          let result = this.createToken(LowLevelTokenType.Text);
 
-          this.SetStateAndMoveNext(LowLevelTokenType.OpenTag);
+          this.setStateAndMoveNext(LowLevelTokenType.OpenTag);
 
           return result;
         }
 
-        this.SetStateAndMoveNext(LowLevelTokenType.OpenTag);
+        this.setStateAndMoveNext(LowLevelTokenType.OpenTag);
         break;
       }
       default:
       {
-        this.MoveNext();
+        this.moveNext();
       }
     }
 
     return null;
   }
 
-  private HandleNewLine(char: string)
+  private handleNewLine(char: string)
   {
     if (char === Characters.NewLine)
     {
-      this.SetStateAndConsume(LowLevelTokenType.Text);
+      this.setStateAndConsume(LowLevelTokenType.Text);
 
       return new LowLevelToken(LowLevelTokenType.NewLine, "");
     }
 
-    this.IgnoreFirstCharacter();
-    this.ConsumeToScan();
-    this.SetStateAndMoveNext(LowLevelTokenType.Text);
+    this.skipCharacter();
+    this.updateConsumed();
+    this.setStateAndMoveNext(LowLevelTokenType.Text);
 
     return null;
   }
 
-  private HandleOpenTag(char: string)
+  private handleOpenTag(char: string)
   {
     switch (char)
     {
       case Characters.GreaterThan:
       {
         let tagName = this.input.substring(this.consumed + 1, this.scan);
-        if (this.tagLibrary.Get(tagName) != null)
+        if (this.tagLibrary.get(tagName) != null)
         {
-          this.IgnoreFirstCharacter(); // "<"
+          this.skipCharacter(); // "<"
 
-          return this.SetStateAndConsumeAndCreateToken(LowLevelTokenType.Text);
+          return this.setStateAndConsumeAndCreateToken(LowLevelTokenType.Text);
         }
 
-        this.SetTextState();
+        this.setTextState();
         break;
       }
       case Characters.LessThan:
-        this.IgnoreFirstCharacter();
-        this.SetStateAndMoveNext(LowLevelTokenType.Text);
+        this.skipCharacter();
+        this.setStateAndMoveNext(LowLevelTokenType.Text);
 
-        return this.CreateToken(LowLevelTokenType.Text);
+        return this.createToken(LowLevelTokenType.Text);
       case Characters.Slash:
-        this.SetStateAndMoveNext(LowLevelTokenType.CloseTag);
+        this.setStateAndMoveNext(LowLevelTokenType.CloseTag);
         break;
       case Characters.Space:
       case Characters.Tab:
@@ -153,19 +153,19 @@ export class LowLevelTokenizer implements ITokenizer
       case Characters.CarriageReturn:
         if (this.getBufferSize() > 1)
         {
-          this.IgnoreFirstCharacter();  // "<"
+          this.skipCharacter();  // "<"
 
-          return this.SetStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeKey);
+          return this.setStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeKey);
         }
 
-        this.SetState(LowLevelTokenType.Text);
+        this.setState(LowLevelTokenType.Text);
         break;
       default:
       {
-        this.MoveNext();
-        if (!this.IsIdentifier(char))
+        this.moveNext();
+        if (!this.isIdentifier(char))
         {
-          this.SetTextState();
+          this.setTextState();
         }
       }
     }
@@ -173,28 +173,28 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleSeekingAttributeKey(char: string)
+  private handleSeekingAttributeKey(char: string)
   {
     switch (char)
     {
       case Characters.GreaterThan:
-        this.SetStateAndConsume(LowLevelTokenType.Text);
+        this.setStateAndConsume(LowLevelTokenType.Text);
         break;
       case Characters.Space:
       case Characters.Tab:
       case Characters.NewLine:
       case Characters.CarriageReturn:
-        this.MoveNext();
-        this.IgnoreFirstCharacter();
+        this.moveNext();
+        this.skipCharacter();
         break;
       default:
-        if (this.IsIdentifier(char))
+        if (this.isIdentifier(char))
         {
-          this.SetState(LowLevelTokenType.AttributeKey);
+          this.setState(LowLevelTokenType.AttributeKey);
         }
         else
         {
-          this.SetStateAndConsume(LowLevelTokenType.Error);
+          this.setStateAndConsume(LowLevelTokenType.Error);
 
           return new LowLevelToken(LowLevelTokenType.Error, `'${char}' is not a valid attribute character.`);
         }
@@ -203,26 +203,26 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleSeekingAttributeSeparator(char: string)
+  private handleSeekingAttributeSeparator(char: string)
   {
     switch (char)
     {
       case Characters.GreaterThan:
-        this.SetStateAndConsume(LowLevelTokenType.Text);
+        this.setStateAndConsume(LowLevelTokenType.Text);
 
         return new LowLevelToken(LowLevelTokenType.Error, 'attribute does not have a value.');
       case Characters.Space:
       case Characters.Tab:
       case Characters.NewLine:
       case Characters.CarriageReturn:
-        this.MoveNext();
+        this.moveNext();
         break;
       case Characters.Equals:
-        this.SetStateAndConsume(LowLevelTokenType.SeekingAttributeValue);
+        this.setStateAndConsume(LowLevelTokenType.SeekingAttributeValue);
         break;
       default:
       {
-        this.SetStateAndConsume(LowLevelTokenType.Error);
+        this.setStateAndConsume(LowLevelTokenType.Error);
 
         return new LowLevelToken(LowLevelTokenType.Error, 'attribute does not have a value.');
       }
@@ -231,25 +231,25 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleSeekingAttributeValue(char: string)
+  private handleSeekingAttributeValue(char: string)
   {
     switch (char)
     {
       case Characters.GreaterThan:
-        this.SetStateAndConsume(LowLevelTokenType.Text);
+        this.setStateAndConsume(LowLevelTokenType.Text);
 
         return new LowLevelToken(LowLevelTokenType.Error, `attribute does not have a value.`);
       case Characters.Space:
       case Characters.Tab:
       case Characters.NewLine:
       case Characters.CarriageReturn:
-        this.MoveNext();
+        this.moveNext();
         break;
       case Characters.DoubleQuote:
-        this.SetStateAndConsume(LowLevelTokenType.AttributeValue);
+        this.setStateAndConsume(LowLevelTokenType.AttributeValue);
         break;
       default:
-        this.SetState(LowLevelTokenType.Error);
+        this.setState(LowLevelTokenType.Error);
 
         return new LowLevelToken(this.state, "Attribute values must be surrounded in double-quotes.");
     }
@@ -257,65 +257,65 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleAttributeKey(char: string)
+  private handleAttributeKey(char: string)
   {
     switch (char)
     {
       case Characters.GreaterThan:
-        this.SetStateAndConsume(LowLevelTokenType.Text);
+        this.setStateAndConsume(LowLevelTokenType.Text);
 
         return new LowLevelToken(LowLevelTokenType.Error, `attribute does not have a value.`);
       case Characters.Equals:
-        return this.SetStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeValue);
+        return this.setStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeValue);
       case Characters.Space:
       case Characters.Tab:
       case Characters.NewLine:
       case Characters.CarriageReturn:
-        return this.SetStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeSeparator);
+        return this.setStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeSeparator);
       default:
-        this.MoveNext();
+        this.moveNext();
     }
 
     return null;
   }
 
-  private HandleAttributeValue(char: string)
+  private handleAttributeValue(char: string)
   {
     switch (char)
     {
       case Characters.DoubleQuote:
-        return this.SetStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeKey);
+        return this.setStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeKey);
       default:
-        this.MoveNext();
+        this.moveNext();
     }
 
     return null;
   }
 
-  private HandleCloseTag(char: string)
+  private handleCloseTag(char: string)
   {
     switch (char)
     {
       case Characters.GreaterThan:
       {
         let tagName = this.input.substring(this.consumed + 2, this.scan);
-        if (this.tagLibrary.Get(tagName) != null)
+        if (this.tagLibrary.get(tagName) != null)
         {
-          this.IgnoreFirstCharacter(); // "<"
-          this.IgnoreFirstCharacter(); // "/"
+          this.skipCharacter(); // "<"
+          this.skipCharacter(); // "/"
 
-          return this.SetStateAndConsumeAndCreateToken(LowLevelTokenType.Text);
+          return this.setStateAndConsumeAndCreateToken(LowLevelTokenType.Text);
         }
 
-        this.SetTextState();
+        this.setTextState();
         break;
       }
       default:
       {
-        this.MoveNext();
-        if (!this.IsAlpha(char))
+        this.moveNext();
+        if (!this.isAlpha(char))
         {
-          this.SetState(LowLevelTokenType.Text);
+          this.setState(LowLevelTokenType.Text);
         }
       }
     }
@@ -323,32 +323,32 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private HandleError(char: string)
+  private handleError(char: string)
   {
-    this.MoveNext();
+    this.moveNext();
 
     switch (char)
     {
       case Characters.GreaterThan:
-        this.ConsumeToScan();
-        this.SetState(LowLevelTokenType.Text);
+        this.updateConsumed();
+        this.setState(LowLevelTokenType.Text);
         break;
     }
 
     return null;
   }
 
-  private IsAlpha(char: string)
+  private isAlpha(char: string)
   {
     return char.search(/[A-Za-z]+/) != -1;
   }
 
-  private IsIdentifier(char: string)
+  private isIdentifier(char: string)
   {
     return char.search(/[^=]+/) != -1;
   }
 
-  private HasBuffer()
+  private hasBuffer()
   {
     return this.getBufferSize() > 0;
   }
@@ -358,36 +358,36 @@ export class LowLevelTokenizer implements ITokenizer
     return this.scan - this.consumed;
   }
 
-  private CreateToken(tokenType: LowLevelTokenType)
+  private createToken(tokenType: LowLevelTokenType)
   {
     let start = this.consumed;
 
-    this.ConsumeToScan();
+    this.updateConsumed();
 
     let value = this.input.substring(start, this.scan);
 
     return new LowLevelToken(tokenType, value);
   }
 
-  private CreateFinalToken()
+  private createFinalToken()
   {
     switch (this.state)
     {
       case LowLevelTokenType.AttributeKey:
-        return this.CreateFinalErrorToken("Unexpected end of input in attribute name.");
+        return this.createFinalErrorToken("Unexpected end of input in attribute name.");
       case LowLevelTokenType.AttributeValue:
-        return this.CreateFinalErrorToken("Unexpected end of input in attribute value.");
+        return this.createFinalErrorToken("Unexpected end of input in attribute value.");
       case LowLevelTokenType.SeekingAttributeKey:
-        return this.CreateFinalErrorToken("Unexpected end of input in tag.");
+        return this.createFinalErrorToken("Unexpected end of input in tag.");
       case LowLevelTokenType.SeekingAttributeSeparator:
-        return this.CreateFinalErrorToken("Unexpected end of input in attribute.");
+        return this.createFinalErrorToken("Unexpected end of input in attribute.");
       case LowLevelTokenType.SeekingAttributeValue:
-        return this.CreateFinalErrorToken("Unexpected end of input in attribute.");
+        return this.createFinalErrorToken("Unexpected end of input in attribute.");
       default:
       {
-        if (this.HasBuffer())
+        if (this.hasBuffer())
         {
-          return this.CreateToken(LowLevelTokenType.Text);
+          return this.createToken(LowLevelTokenType.Text);
         }
       }
     }
@@ -395,56 +395,56 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private CreateFinalErrorToken(errorMessage: string)
+  private createFinalErrorToken(errorMessage: string)
   {
-    this.SetState(LowLevelTokenType.Text);
-    this.ConsumeToScan();
+    this.setState(LowLevelTokenType.Text);
+    this.updateConsumed();
 
     return new LowLevelToken(LowLevelTokenType.Error, errorMessage);
   }
 
-  private SetTextState()
+  private setTextState()
   {
-    this.SetStateAndMoveNext(LowLevelTokenType.Text);
+    this.setStateAndMoveNext(LowLevelTokenType.Text);
   }
 
-  private SetStateAndConsumeAndCreateToken(tokenType: LowLevelTokenType)
+  private setStateAndConsumeAndCreateToken(tokenType: LowLevelTokenType)
   {
-    let result = this.CreateToken(this.state);
+    let result = this.createToken(this.state);
 
-    this.SetStateAndConsume(tokenType);
+    this.setStateAndConsume(tokenType);
 
     return result;
   }
 
-  private SetStateAndConsume(tokenType: LowLevelTokenType)
+  private setStateAndConsume(tokenType: LowLevelTokenType)
   {
-    this.SetStateAndMoveNext(tokenType);
-    this.ConsumeToScan();
+    this.setStateAndMoveNext(tokenType);
+    this.updateConsumed();
   }
 
-  private ConsumeToScan(): void
+  private updateConsumed(): void
   {
     this.consumed = this.scan;
   }
 
-  private SetStateAndMoveNext(state: LowLevelTokenType)
+  private setStateAndMoveNext(state: LowLevelTokenType)
   {
-    this.SetState(state);
-    this.MoveNext();
+    this.setState(state);
+    this.moveNext();
   }
 
-  private SetState(state: LowLevelTokenType)
+  private setState(state: LowLevelTokenType)
   {
     this.state = state;
   }
 
-  private MoveNext()
+  private moveNext()
   {
     this.scan += 1;
   }
 
-  private IgnoreFirstCharacter()
+  private skipCharacter()
   {
     this.consumed += 1;
   }

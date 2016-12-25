@@ -12,27 +12,27 @@ describe('LowLevelTokenizer', function()
   {
     let tagLibrary = new TagLibrary();
 
-    tagLibrary.Add(new TagDefinition("tag"));
-    tagLibrary.Add(new TagDefinition("tag_2"));
-    tagLibrary.Add(new TagDefinition("i"));
+    tagLibrary.add(new TagDefinition("tag"));
+    tagLibrary.add(new TagDefinition("tag_2"));
+    tagLibrary.add(new TagDefinition("i"));
 
     return new LowLevelTokenizer(tagLibrary, input);
   }
 
   function assertToken(tokenizer: ITokenizer, type: LowLevelTokenType, value: string, line: number, column: number)
   {
-    let token = tokenizer.GetNext();
+    let token = tokenizer.getNext();
 
     expect(token).not.to.be.null;
-    expect(token.Type).to.equal(type);
-    expect(token.Value).to.equal(value);
-    // expect(token.Line).to.equal(line);
-    // expect(token.Column).to.equal(column);
+    expect(token.type).to.equal(type);
+    expect(token.value).to.equal(value);
+    // expect(token.line).to.equal(line);
+    // expect(token.column).to.equal(column);
   }
 
   function assertDone(tokenizer: ITokenizer)
   {
-    let token = tokenizer.GetNext();
+    let token = tokenizer.getNext();
 
     expect(token).to.be.null;
   }

@@ -1,4 +1,4 @@
 export interface ITagDefinition
 {
-  Name: string;
+  readonly name: string;
 }

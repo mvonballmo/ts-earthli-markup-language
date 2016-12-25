@@ -3,12 +3,12 @@ import {ITagLibrary} from "./ITagLibrary";
 
 export class TagLibrary implements ITagLibrary
 {
-  Add(tagDefinition: ITagDefinition): void
+  add(tagDefinition: ITagDefinition): void
   {
-    this.tags[tagDefinition.Name] = tagDefinition;
+    this.tags[tagDefinition.name] = tagDefinition;
   }
 
-  Get(name: string): ITagDefinition
+  get(name: string): ITagDefinition
   {
     return this.tags[name];
   }

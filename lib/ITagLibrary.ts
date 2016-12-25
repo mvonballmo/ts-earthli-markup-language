@@ -2,5 +2,5 @@ import {ITagDefinition} from "./ITagDefinition";
 
 export interface ITagLibrary
 {
-  Get(name: string): ITagDefinition;
+  get(name: string): ITagDefinition;
 }

@@ -4,15 +4,15 @@ export class LowLevelToken
 {
   constructor(type: LowLevelTokenType, value: string)
   {
-    this.Type = type;
-    this.Value = value;
+    this.type = type;
+    this.value = value;
   }
 
-  Type: LowLevelTokenType;
+  type: LowLevelTokenType;
 
-  Value: string;
+  value: string;
 
-  Line: number;
+  line: number;
 
-  Column: number;
+  column: number;
 }

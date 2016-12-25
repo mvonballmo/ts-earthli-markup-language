@@ -4,8 +4,8 @@ export class TagDefinition implements ITagDefinition
 {
   constructor(name: string)
   {
-    this.Name = name;
+    this.name = name;
   }
 
-  Name: string;
+  name: string;
 }
