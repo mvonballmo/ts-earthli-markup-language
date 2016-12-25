@@ -256,7 +256,7 @@ describe('LowLevelTokenizer', function()
       let tokenizer = createTokenizer("<tag attr");
 
       assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
-      assertToken(tokenizer, LowLevelTokenType.Error, "attr", 0, 5);
+      assertToken(tokenizer, LowLevelTokenType.Error, "Unexpected end of input in attribute name.", 0, 5);
       assertDone(tokenizer);
     });
     it('attribute with value without end bracket', function()
@@ -266,7 +266,7 @@ describe('LowLevelTokenizer', function()
       assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
       assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5);
       assertToken(tokenizer, LowLevelTokenType.AttributeValue, "value", 0, 11);
-      assertToken(tokenizer, LowLevelTokenType.Error, "", 0, 16);
+      assertToken(tokenizer, LowLevelTokenType.Error, "Unexpected end of input in tag.", 0, 16);
 
       assertDone(tokenizer);
     });
@@ -410,7 +410,7 @@ describe('LowLevelTokenizer', function()
 
       assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
       assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5);
-      assertToken(tokenizer, LowLevelTokenType.Error, "", 0, 10);
+      assertToken(tokenizer, LowLevelTokenType.Error, "Attribute values must be surrounded in double-quotes.", 0, 10);
       assertDone(tokenizer);
     });
     it('attribute with value without quotes and text', function()
@@ -419,7 +419,7 @@ describe('LowLevelTokenizer', function()
 
       assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
       assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5);
-      assertToken(tokenizer, LowLevelTokenType.Error, "", 0, 10);
+      assertToken(tokenizer, LowLevelTokenType.Error, "Attribute values must be surrounded in double-quotes.", 0, 10);
       assertToken(tokenizer, LowLevelTokenType.Text, "Text", 0, 17);
       assertDone(tokenizer);
     });

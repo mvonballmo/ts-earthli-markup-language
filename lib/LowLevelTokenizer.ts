@@ -248,7 +248,9 @@ export class LowLevelTokenizer implements ITokenizer
         this.SetStateAndConsume(LowLevelTokenType.AttributeValue);
         break;
       default:
-        return this.CreateErrorToken();
+        this.SetState(LowLevelTokenType.Error);
+
+        return new LowLevelToken(this.state, "Attribute values must be surrounded in double-quotes.");
     }
 
     return null;
@@ -369,13 +371,6 @@ export class LowLevelTokenizer implements ITokenizer
     return new LowLevelToken(this.state, this.GetBuffer());
   }
 
-  private CreateErrorToken()
-  {
-    this.SetState(LowLevelTokenType.Error);
-
-    return this.CreateCurrentToken();
-  }
-
   private CreateFinalToken()
   {
     this.start = this.consumed;
@@ -383,15 +378,15 @@ export class LowLevelTokenizer implements ITokenizer
     switch (this.state)
     {
       case LowLevelTokenType.AttributeKey:
+        return this.CreateFinalErrorToken("Unexpected end of input in attribute name.");
       case LowLevelTokenType.AttributeValue:
+        return this.CreateFinalErrorToken("Unexpected end of input in attribute value.");
       case LowLevelTokenType.SeekingAttributeKey:
+        return this.CreateFinalErrorToken("Unexpected end of input in tag.");
       case LowLevelTokenType.SeekingAttributeSeparator:
+        return this.CreateFinalErrorToken("Unexpected end of input in attribute.");
       case LowLevelTokenType.SeekingAttributeValue:
-      {
-        this.SetState(LowLevelTokenType.Text);
-
-        return new LowLevelToken(LowLevelTokenType.Error, this.GetBuffer());
-      }
+        return this.CreateFinalErrorToken("Unexpected end of input in attribute.");
       default:
       {
         if (this.HasBuffer())
@@ -402,6 +397,14 @@ export class LowLevelTokenizer implements ITokenizer
     }
 
     return null;
+  }
+
+  private CreateFinalErrorToken(errorMessage: string)
+  {
+    this.SetState(LowLevelTokenType.Text);
+    this.ConsumeToScan();
+
+    return new LowLevelToken(LowLevelTokenType.Error, errorMessage);
   }
 
   private SetTextState()
