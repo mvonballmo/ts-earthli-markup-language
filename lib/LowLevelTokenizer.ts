@@ -12,7 +12,6 @@ export class LowLevelTokenizer implements ITokenizer
     this.tagLibrary = tagLibrary;
     this.input = input;
     this.scan = 0;
-    this.start = 0;
     this.consumed = 0;
     this.state = LowLevelTokenType.Text;
   }
@@ -67,7 +66,7 @@ export class LowLevelTokenizer implements ITokenizer
       {
         if (this.HasBuffer())
         {
-          return this.CreateCurrentToken();
+          return this.CreateToken(LowLevelTokenType.Text);
         }
 
         this.MoveNext();
@@ -80,17 +79,19 @@ export class LowLevelTokenizer implements ITokenizer
         {
           return this.SetStateAndConsumeAndCreateToken(LowLevelTokenType.NewLine);
         }
-        else
-        {
-          this.SetStateAndMoveNext(LowLevelTokenType.NewLine);
-        }
+
+        this.SetStateAndMoveNext(LowLevelTokenType.NewLine);
         break;
       }
       case Characters.LessThan:
       {
         if (this.HasBuffer())
         {
-          return this.SetStateAndCreateToken(LowLevelTokenType.OpenTag);
+          let result = this.CreateToken(LowLevelTokenType.Text);
+
+          this.SetStateAndMoveNext(LowLevelTokenType.OpenTag);
+
+          return result;
         }
 
         this.SetStateAndMoveNext(LowLevelTokenType.OpenTag);
@@ -127,7 +128,7 @@ export class LowLevelTokenizer implements ITokenizer
     {
       case Characters.GreaterThan:
       {
-        let tagName = this.input.substring(this.start + 1, this.scan);
+        let tagName = this.input.substring(this.consumed + 1, this.scan);
         if (this.tagLibrary.Get(tagName) != null)
         {
           this.IgnoreFirstCharacter(); // "<"
@@ -142,7 +143,7 @@ export class LowLevelTokenizer implements ITokenizer
         this.IgnoreFirstCharacter();
         this.SetStateAndMoveNext(LowLevelTokenType.Text);
 
-        return this.CreateCurrentToken();
+        return this.CreateToken(LowLevelTokenType.Text);
       case Characters.Slash:
         this.SetStateAndMoveNext(LowLevelTokenType.CloseTag);
         break;
@@ -297,7 +298,7 @@ export class LowLevelTokenizer implements ITokenizer
     {
       case Characters.GreaterThan:
       {
-        let tagName = this.input.substring(this.start + 2, this.scan);
+        let tagName = this.input.substring(this.consumed + 2, this.scan);
         if (this.tagLibrary.Get(tagName) != null)
         {
           this.IgnoreFirstCharacter(); // "<"
@@ -354,27 +355,22 @@ export class LowLevelTokenizer implements ITokenizer
 
   private getBufferSize()
   {
-    return this.scan - this.start;
+    return this.scan - this.consumed;
   }
 
-  private GetBuffer()
+  private CreateToken(tokenType: LowLevelTokenType)
   {
-    let start = this.start;
+    let start = this.consumed;
 
     this.ConsumeToScan();
 
-    return this.input.substring(start, this.scan);
-  }
+    let value = this.input.substring(start, this.scan);
 
-  private CreateCurrentToken()
-  {
-    return new LowLevelToken(this.state, this.GetBuffer());
+    return new LowLevelToken(tokenType, value);
   }
 
   private CreateFinalToken()
   {
-    this.start = this.consumed;
-
     switch (this.state)
     {
       case LowLevelTokenType.AttributeKey:
@@ -391,7 +387,7 @@ export class LowLevelTokenizer implements ITokenizer
       {
         if (this.HasBuffer())
         {
-          return new LowLevelToken(LowLevelTokenType.Text, this.GetBuffer());
+          return this.CreateToken(LowLevelTokenType.Text);
         }
       }
     }
@@ -414,18 +410,9 @@ export class LowLevelTokenizer implements ITokenizer
 
   private SetStateAndConsumeAndCreateToken(tokenType: LowLevelTokenType)
   {
-    let result = this.CreateCurrentToken();
+    let result = this.CreateToken(this.state);
 
     this.SetStateAndConsume(tokenType);
-
-    return result;
-  }
-
-  private SetStateAndCreateToken(tokenType: LowLevelTokenType)
-  {
-    let result = this.CreateCurrentToken();
-
-    this.SetStateAndMoveNext(tokenType);
 
     return result;
   }
@@ -438,7 +425,6 @@ export class LowLevelTokenizer implements ITokenizer
 
   private ConsumeToScan(): void
   {
-    this.start = this.scan;
     this.consumed = this.scan;
   }
 
@@ -460,13 +446,12 @@ export class LowLevelTokenizer implements ITokenizer
 
   private IgnoreFirstCharacter()
   {
-    this.start += 1;
+    this.consumed += 1;
   }
 
+  private input: string;
   private state: LowLevelTokenType;
-  private start: number;
   private scan: number;
   private consumed: number;
-  private input: string;
   private tagLibrary: ITagLibrary;
 }
