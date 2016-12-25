@@ -4,6 +4,7 @@ export enum LowLevelTokenType
   NewLine,
   OpenTag,
   SeekingAttributeKey,
+  SeekingAttributeSeparator,
   SeekingAttributeValue,
   AttributeKey,
   AttributeValue,

@@ -44,6 +44,8 @@ export class LowLevelTokenizer implements ITokenizer
         return this.HandleOpenTag(char);
       case LowLevelTokenType.SeekingAttributeKey:
         return this.HandleSeekingAttributeKey(char);
+      case LowLevelTokenType.SeekingAttributeSeparator:
+        return this.HandleSeekingAttributeSeparator(char);
       case LowLevelTokenType.SeekingAttributeValue:
         return this.HandleSeekingAttributeValue(char);
       case LowLevelTokenType.CloseTag:
@@ -112,8 +114,6 @@ export class LowLevelTokenizer implements ITokenizer
       return new LowLevelToken(LowLevelTokenType.NewLine, "");
     }
 
-    // Fix this
-
     this.IgnoreFirstCharacter();
     this.ConsumeToScan();
     this.SetStateAndMoveNext(LowLevelTokenType.Text);
@@ -139,8 +139,10 @@ export class LowLevelTokenizer implements ITokenizer
         break;
       }
       case Characters.LessThan:
-        this.MoveNext();
-        break;
+        this.IgnoreFirstCharacter();
+        this.SetStateAndMoveNext(LowLevelTokenType.Text);
+
+        return this.CreateCurrentToken();
       case Characters.Slash:
         this.SetStateAndMoveNext(LowLevelTokenType.CloseTag);
         break;
@@ -155,7 +157,7 @@ export class LowLevelTokenizer implements ITokenizer
           return this.SetStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeKey);
         }
 
-        this.SetTextState();
+        this.SetState(LowLevelTokenType.Text);
         break;
       default:
       {
@@ -191,8 +193,38 @@ export class LowLevelTokenizer implements ITokenizer
         }
         else
         {
-          return this.CreateErrorToken();
+          this.SetStateAndConsume(LowLevelTokenType.Error);
+
+          return new LowLevelToken(LowLevelTokenType.Error, `'${char}' is not a valid attribute character.`);
         }
+    }
+
+    return null;
+  }
+
+  private HandleSeekingAttributeSeparator(char: string)
+  {
+    switch (char)
+    {
+      case Characters.GreaterThan:
+        this.SetStateAndConsume(LowLevelTokenType.Text);
+
+        return new LowLevelToken(LowLevelTokenType.Error, 'attribute does not have a value.');
+      case Characters.Space:
+      case Characters.Tab:
+      case Characters.NewLine:
+      case Characters.CarriageReturn:
+        this.MoveNext();
+        break;
+      case Characters.Equals:
+        this.SetStateAndConsume(LowLevelTokenType.SeekingAttributeValue);
+        break;
+      default:
+      {
+        this.SetStateAndConsume(LowLevelTokenType.Error);
+
+        return new LowLevelToken(LowLevelTokenType.Error, 'attribute does not have a value.');
+      }
     }
 
     return null;
@@ -203,11 +235,9 @@ export class LowLevelTokenizer implements ITokenizer
     switch (char)
     {
       case Characters.GreaterThan:
-        let value = this.GetBuffer();
-
         this.SetStateAndConsume(LowLevelTokenType.Text);
 
-        return new LowLevelToken(LowLevelTokenType.Error, value);
+        return new LowLevelToken(LowLevelTokenType.Error, `attribute does not have a value.`);
       case Characters.Space:
       case Characters.Tab:
       case Characters.NewLine:
@@ -228,23 +258,19 @@ export class LowLevelTokenizer implements ITokenizer
   {
     switch (char)
     {
+      case Characters.GreaterThan:
+        this.SetStateAndConsume(LowLevelTokenType.Text);
+
+        return new LowLevelToken(LowLevelTokenType.Error, `attribute does not have a value.`);
       case Characters.Equals:
         return this.SetStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeValue);
       case Characters.Space:
       case Characters.Tab:
       case Characters.NewLine:
       case Characters.CarriageReturn:
-        this.MoveNext();
-        break;
+        return this.SetStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeSeparator);
       default:
-        if (this.IsIdentifier(char))
-        {
-          this.MoveNext();
-        }
-        else
-        {
-          return this.CreateErrorToken();
-        }
+        this.MoveNext();
     }
 
     return null;
@@ -316,7 +342,7 @@ export class LowLevelTokenizer implements ITokenizer
 
   private IsIdentifier(char: string)
   {
-    return char.search(/[A-Za-z0-9_]+/) != -1;
+    return char.search(/[^=]+/) != -1;
   }
 
   private HasBuffer()
@@ -327,11 +353,6 @@ export class LowLevelTokenizer implements ITokenizer
   private getBufferSize()
   {
     return this.scan - this.start;
-  }
-
-  private PeekBuffer()
-  {
-    return this.input.substring(this.start, this.scan);
   }
 
   private GetBuffer()
@@ -364,6 +385,7 @@ export class LowLevelTokenizer implements ITokenizer
       case LowLevelTokenType.AttributeKey:
       case LowLevelTokenType.AttributeValue:
       case LowLevelTokenType.SeekingAttributeKey:
+      case LowLevelTokenType.SeekingAttributeSeparator:
       case LowLevelTokenType.SeekingAttributeValue:
       {
         this.SetState(LowLevelTokenType.Text);
