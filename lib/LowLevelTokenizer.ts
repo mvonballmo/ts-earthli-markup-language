@@ -335,7 +335,7 @@ export class LowLevelTokenizer implements ITokenizer
         break;
     }
 
-    return <LowLevelToken>null;
+    return null;
   }
 
   private IsAlpha(char: string)

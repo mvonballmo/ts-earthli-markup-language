@@ -2,5 +2,5 @@ import {LowLevelToken} from "./LowLevelToken";
 
 export interface ITokenizer
 {
-  GetNext(): LowLevelToken;
+  GetNext(): LowLevelToken | null;
 }

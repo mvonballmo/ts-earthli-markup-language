@@ -1,16 +1,20 @@
 {
-  "compilerOptions": 
-  {
+  "compilerOptions": {
     "target": "es6",
     "module": "commonjs",
     "sourceMap": true,
     "allowSyntheticDefaultImports": false,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
+    "allowUnreachableCode": false,
+    "strictNullChecks": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true,
     "noImplicitAny": true
   },
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "test"
   ],
   "compileOnSave": true
 }
