@@ -13,6 +13,9 @@ export class LowLevelTokenizer implements ITokenizer
     this.input = input;
     this.scan = 0;
     this.consumed = 0;
+    this.line = 0;
+    this.column = 0;
+    this.columnConsumed = 0;
     this.state = LowLevelTokenType.Text;
   }
 
@@ -70,8 +73,8 @@ export class LowLevelTokenizer implements ITokenizer
         }
 
         this.moveNext();
-        this.updateConsumed();
-        return new LowLevelToken(LowLevelTokenType.NewLine, "");
+
+        return this.createToken(LowLevelTokenType.NewLine);
       }
       case Characters.CarriageReturn:
       {
@@ -110,9 +113,9 @@ export class LowLevelTokenizer implements ITokenizer
   {
     if (char === Characters.NewLine)
     {
-      this.setStateAndConsume(LowLevelTokenType.Text);
+      this.setStateAndMoveNext(LowLevelTokenType.Text);
 
-      return new LowLevelToken(LowLevelTokenType.NewLine, "");
+      return this.createToken(LowLevelTokenType.NewLine);
     }
 
     this.skipCharacter();
@@ -149,13 +152,26 @@ export class LowLevelTokenizer implements ITokenizer
         break;
       case Characters.Space:
       case Characters.Tab:
-      case Characters.NewLine:
       case Characters.CarriageReturn:
         if (this.getBufferSize() > 1)
         {
           this.skipCharacter();  // "<"
 
           return this.setStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeKey);
+        }
+
+        this.setState(LowLevelTokenType.Text);
+        break;
+      case Characters.NewLine:
+        if (this.getBufferSize() > 1)
+        {
+          this.skipCharacter();  // "<"
+
+          let result = this.setStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeKey);
+
+          this.increaseLine();
+
+          return result;
         }
 
         this.setState(LowLevelTokenType.Text);
@@ -182,10 +198,14 @@ export class LowLevelTokenizer implements ITokenizer
         break;
       case Characters.Space:
       case Characters.Tab:
-      case Characters.NewLine:
       case Characters.CarriageReturn:
         this.moveNext();
         this.skipCharacter();
+        break;
+      case Characters.NewLine:
+        this.moveNext();
+        this.skipCharacter();
+        this.increaseLine();
         break;
       default:
         if (this.isIdentifier(char))
@@ -194,9 +214,11 @@ export class LowLevelTokenizer implements ITokenizer
         }
         else
         {
+          let result = this.createErrorToken(`'${char}' is not a valid attribute character.`);
+
           this.setStateAndConsume(LowLevelTokenType.Error);
 
-          return new LowLevelToken(LowLevelTokenType.Error, `'${char}' is not a valid attribute character.`);
+          return result;
         }
     }
 
@@ -208,23 +230,31 @@ export class LowLevelTokenizer implements ITokenizer
     switch (char)
     {
       case Characters.GreaterThan:
+        let column = this.lastToken != null ? this.lastToken.column : undefined;
+        let result = this.createErrorToken("attribute does not have a value.", column);
+
         this.setStateAndConsume(LowLevelTokenType.Text);
 
-        return new LowLevelToken(LowLevelTokenType.Error, 'attribute does not have a value.');
+        return result;
       case Characters.Space:
       case Characters.Tab:
-      case Characters.NewLine:
       case Characters.CarriageReturn:
         this.moveNext();
+        break;
+      case Characters.NewLine:
+        this.moveNext();
+        this.increaseLine();
         break;
       case Characters.Equals:
         this.setStateAndConsume(LowLevelTokenType.SeekingAttributeValue);
         break;
       default:
       {
+        let result = this.createErrorToken("attribute does not have a value.");
+
         this.setStateAndConsume(LowLevelTokenType.Error);
 
-        return new LowLevelToken(LowLevelTokenType.Error, 'attribute does not have a value.');
+        return result;
       }
     }
 
@@ -236,13 +266,18 @@ export class LowLevelTokenizer implements ITokenizer
     switch (char)
     {
       case Characters.GreaterThan:
+        let result = this.createErrorToken("attribute does not have a value.");
+
         this.setStateAndConsume(LowLevelTokenType.Text);
 
-        return new LowLevelToken(LowLevelTokenType.Error, `attribute does not have a value.`);
+        return result;
       case Characters.Space:
       case Characters.Tab:
-      case Characters.NewLine:
       case Characters.CarriageReturn:
+        this.moveNext();
+        break;
+      case Characters.NewLine:
+        this.increaseLine();
         this.moveNext();
         break;
       case Characters.DoubleQuote:
@@ -251,7 +286,7 @@ export class LowLevelTokenizer implements ITokenizer
       default:
         this.setState(LowLevelTokenType.Error);
 
-        return new LowLevelToken(this.state, "Attribute values must be surrounded in double-quotes.");
+        return this.createErrorToken("Attribute values must be surrounded by double-quotes.");
     }
 
     return null;
@@ -262,16 +297,25 @@ export class LowLevelTokenizer implements ITokenizer
     switch (char)
     {
       case Characters.GreaterThan:
+        let result = this.createErrorToken("attribute does not have a value.");
+
         this.setStateAndConsume(LowLevelTokenType.Text);
 
-        return new LowLevelToken(LowLevelTokenType.Error, `attribute does not have a value.`);
+        return result;
       case Characters.Equals:
         return this.setStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeValue);
       case Characters.Space:
       case Characters.Tab:
-      case Characters.NewLine:
       case Characters.CarriageReturn:
         return this.setStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeSeparator);
+      case Characters.NewLine:
+      {
+        let result = this.setStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeSeparator);
+
+        this.increaseLine();
+
+        return result;
+      }
       default:
         this.moveNext();
     }
@@ -284,7 +328,11 @@ export class LowLevelTokenizer implements ITokenizer
     switch (char)
     {
       case Characters.DoubleQuote:
-        return this.setStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeKey);
+        this.column -= 1;
+        let result = this.setStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeKey);
+        this.column += 1;
+
+        return result;
       default:
         this.moveNext();
     }
@@ -361,12 +409,20 @@ export class LowLevelTokenizer implements ITokenizer
   private createToken(tokenType: LowLevelTokenType)
   {
     let start = this.consumed;
+    let column = this.column;
 
     this.updateConsumed();
 
     let value = this.input.substring(start, this.scan);
 
-    return new LowLevelToken(tokenType, value);
+    let result = this.lastToken = new LowLevelToken(tokenType, value, this.line, column);
+
+    if (tokenType === LowLevelTokenType.NewLine)
+    {
+      this.increaseLine();
+    }
+
+    return result;
   }
 
   private createFinalToken()
@@ -398,9 +454,17 @@ export class LowLevelTokenizer implements ITokenizer
   private createFinalErrorToken(errorMessage: string)
   {
     this.setState(LowLevelTokenType.Text);
+
+    let result = this.createErrorToken(errorMessage);
+
     this.updateConsumed();
 
-    return new LowLevelToken(LowLevelTokenType.Error, errorMessage);
+    return result;
+  }
+
+  private createErrorToken(errorMessage: string, column?: number)
+  {
+    return this.lastToken = new LowLevelToken(LowLevelTokenType.Error, errorMessage, this.line, column || this.column);
   }
 
   private setTextState()
@@ -425,7 +489,9 @@ export class LowLevelTokenizer implements ITokenizer
 
   private updateConsumed(): void
   {
+    this.column += this.scan - this.columnConsumed;
     this.consumed = this.scan;
+    this.columnConsumed = this.consumed;
   }
 
   private setStateAndMoveNext(state: LowLevelTokenType)
@@ -447,11 +513,24 @@ export class LowLevelTokenizer implements ITokenizer
   private skipCharacter()
   {
     this.consumed += 1;
+    this.columnConsumed += 1;
+    this.column += 1;
+  }
+
+  private increaseLine()
+  {
+    this.line += 1;
+    this.column = 0;
+    this.columnConsumed = this.scan;
   }
 
   private input: string;
   private state: LowLevelTokenType;
   private scan: number;
   private consumed: number;
+  private columnConsumed: number;
+  private line: number;
+  private column: number;
+  private lastToken: LowLevelToken;
   private tagLibrary: ITagLibrary;
 }
