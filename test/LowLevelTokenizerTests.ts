@@ -419,13 +419,23 @@ describe('LowLevelTokenizer', function()
       assertToken(tokenizer, LowLevelTokenType.CloseTag, "tag", 0, 0);
       assertDone(tokenizer);
     });
+    it('nested open and close tags', function()
+    {
+      let tokenizer = createTokenizer("<tag><i></i></tag>");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "i", 0, 5);
+      assertToken(tokenizer, LowLevelTokenType.CloseTag, "i", 0, 8);
+      assertToken(tokenizer, LowLevelTokenType.CloseTag, "tag", 0, 12);
+      assertDone(tokenizer);
+    });
     it('open and close tag with text', function()
     {
       let tokenizer = createTokenizer("<tag>Text</tag>");
 
       assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 0);
-      assertToken(tokenizer, LowLevelTokenType.Text, "Text", 0, 0);
-      assertToken(tokenizer, LowLevelTokenType.CloseTag, "tag", 0, 0);
+      assertToken(tokenizer, LowLevelTokenType.Text, "Text", 0, 5);
+      assertToken(tokenizer, LowLevelTokenType.CloseTag, "tag", 0, 11);
       assertDone(tokenizer);
     });
     it('open with attributes and close tag with text', function()
