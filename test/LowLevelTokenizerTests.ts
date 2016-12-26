@@ -319,13 +319,31 @@ describe('LowLevelTokenizer', function()
       assertToken(tokenizer, LowLevelTokenType.Error, "attribute does not have a value.", 0, 5, 5);
       assertDone(tokenizer);
     });
-    it('attribute without value', function()
+    it('attribute without value and space', function()
     {
       let tokenizer = createTokenizer("<tag attr >");
 
       assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 1, 1);
       assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5, 5);
       assertToken(tokenizer, LowLevelTokenType.Error, "attribute does not have a value.", 0, 5, 5);
+      assertDone(tokenizer);
+    });
+    it('attribute without value and no end bracket', function()
+    {
+      let tokenizer = createTokenizer("<tag attr ");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 1, 1);
+      assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5, 5);
+      assertToken(tokenizer, LowLevelTokenType.Error, "Unexpected end of input in attribute.", 0, 5, 5);
+      assertDone(tokenizer);
+    });
+    it('attribute with equals and no end bracket', function()
+    {
+      let tokenizer = createTokenizer("<tag attr= ");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 1, 1);
+      assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5, 5);
+      assertToken(tokenizer, LowLevelTokenType.Error, "Unexpected end of input in attribute.", 0, 5, 5);
       assertDone(tokenizer);
     });
     it('two attributes without values', function()
@@ -429,6 +447,15 @@ describe('LowLevelTokenizer', function()
       assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 1, 1);
       assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5, 5);
       assertToken(tokenizer, LowLevelTokenType.Error, "Attribute values must be surrounded by double-quotes.", 0, 10, 10);
+      assertDone(tokenizer);
+    });
+    it('attribute with value with unclosed quotes', function()
+    {
+      let tokenizer = createTokenizer("<tag attr=\"value>");
+
+      assertToken(tokenizer, LowLevelTokenType.OpenTag, "tag", 0, 1, 1);
+      assertToken(tokenizer, LowLevelTokenType.AttributeKey, "attr", 0, 5, 5);
+      assertToken(tokenizer, LowLevelTokenType.Error, "Unexpected end of input in attribute value.", 0, 11, 11);
       assertDone(tokenizer);
     });
     it('attribute with value without quotes and text', function()

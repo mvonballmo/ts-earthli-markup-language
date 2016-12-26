@@ -230,9 +230,7 @@ export class LowLevelTokenizer implements ITokenizer
     switch (char)
     {
       case Characters.GreaterThan:
-        let column = this.lastToken != null ? this.lastToken.column : undefined;
-        let position = this.lastToken != null ? this.lastToken.position : undefined;
-        let result = this.createErrorToken("attribute does not have a value.", column, position);
+        let result = this.createErrorToken("attribute does not have a value.", true);
 
         this.setStateAndConsume(LowLevelTokenType.Text);
 
@@ -251,9 +249,7 @@ export class LowLevelTokenizer implements ITokenizer
         break;
       default:
       {
-        let column = this.lastToken != null ? this.lastToken.column : undefined;
-        let position = this.lastToken != null ? this.lastToken.position : undefined;
-        let result = this.createErrorToken("attribute does not have a value.", column, position);
+        let result = this.createErrorToken("attribute does not have a value.", true);
 
         this.setStateAndConsume(LowLevelTokenType.Error);
 
@@ -443,9 +439,8 @@ export class LowLevelTokenizer implements ITokenizer
       case LowLevelTokenType.SeekingAttributeKey:
         return this.createFinalErrorToken("Unexpected end of input in tag.");
       case LowLevelTokenType.SeekingAttributeSeparator:
-        return this.createFinalErrorToken("Unexpected end of input in attribute.");
       case LowLevelTokenType.SeekingAttributeValue:
-        return this.createFinalErrorToken("Unexpected end of input in attribute.");
+        return this.createFinalErrorToken("Unexpected end of input in attribute.", true);
       default:
       {
         if (this.hasBuffer())
@@ -458,20 +453,23 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private createFinalErrorToken(errorMessage: string)
+  private createFinalErrorToken(errorMessage: string, useLastToken?: boolean)
   {
     this.setState(LowLevelTokenType.Text);
 
-    let result = this.createErrorToken(errorMessage);
+    let result = this.createErrorToken(errorMessage, useLastToken);
 
     this.updateConsumed();
 
     return result;
   }
 
-  private createErrorToken(errorMessage: string, column?: number, position?: number)
+  private createErrorToken(errorMessage: string, useLastToken?: boolean)
   {
-    return this.lastToken = new LowLevelToken(LowLevelTokenType.Error, errorMessage, this.line, column || this.column, position || this.consumed);
+    let column = useLastToken && this.lastToken != null ? this.lastToken.column : this.column;
+    let position = useLastToken && this.lastToken != null ? this.lastToken.position : this.consumed;
+
+    return this.lastToken = new LowLevelToken(LowLevelTokenType.Error, errorMessage, this.line, column, position);
   }
 
   private setTextState()
