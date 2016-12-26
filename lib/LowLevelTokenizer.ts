@@ -231,7 +231,8 @@ export class LowLevelTokenizer implements ITokenizer
     {
       case Characters.GreaterThan:
         let column = this.lastToken != null ? this.lastToken.column : undefined;
-        let result = this.createErrorToken("attribute does not have a value.", column);
+        let position = this.lastToken != null ? this.lastToken.position : undefined;
+        let result = this.createErrorToken("attribute does not have a value.", column, position);
 
         this.setStateAndConsume(LowLevelTokenType.Text);
 
@@ -250,7 +251,9 @@ export class LowLevelTokenizer implements ITokenizer
         break;
       default:
       {
-        let result = this.createErrorToken("attribute does not have a value.");
+        let column = this.lastToken != null ? this.lastToken.column : undefined;
+        let position = this.lastToken != null ? this.lastToken.position : undefined;
+        let result = this.createErrorToken("attribute does not have a value.", column, position);
 
         this.setStateAndConsume(LowLevelTokenType.Error);
 
@@ -329,7 +332,9 @@ export class LowLevelTokenizer implements ITokenizer
     {
       case Characters.DoubleQuote:
         this.column -= 1;
-        let result = this.setStateAndConsumeAndCreateToken(LowLevelTokenType.SeekingAttributeKey);
+        let result = this.createToken(this.state, this.consumed - 1);
+
+        this.setStateAndConsume(LowLevelTokenType.SeekingAttributeKey);
         this.column += 1;
 
         return result;
@@ -406,16 +411,18 @@ export class LowLevelTokenizer implements ITokenizer
     return this.scan - this.consumed;
   }
 
-  private createToken(tokenType: LowLevelTokenType)
+  private createToken(tokenType: LowLevelTokenType, position?: number)
   {
-    let start = this.consumed;
+    let consumed = this.consumed;
     let column = this.column;
+
+    position = position || consumed;
 
     this.updateConsumed();
 
-    let value = this.input.substring(start, this.scan);
+    let value = this.input.substring(consumed, this.scan);
 
-    let result = this.lastToken = new LowLevelToken(tokenType, value, this.line, column);
+    let result = this.lastToken = new LowLevelToken(tokenType, value, this.line, column, position);
 
     if (tokenType === LowLevelTokenType.NewLine)
     {
@@ -462,9 +469,9 @@ export class LowLevelTokenizer implements ITokenizer
     return result;
   }
 
-  private createErrorToken(errorMessage: string, column?: number)
+  private createErrorToken(errorMessage: string, column?: number, position?: number)
   {
-    return this.lastToken = new LowLevelToken(LowLevelTokenType.Error, errorMessage, this.line, column || this.column);
+    return this.lastToken = new LowLevelToken(LowLevelTokenType.Error, errorMessage, this.line, column || this.column, position || this.consumed);
   }
 
   private setTextState()
