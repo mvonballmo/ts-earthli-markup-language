@@ -6,6 +6,8 @@ import {TagDefinition} from "../lib/TagDefinition";
 import {LowLevelTokenizer} from "../lib/LowLevelTokenizer";
 import {LowLevelTokenType} from "../lib/LowLevelTokenType";
 import {LowLevelToken} from "../lib/LowLevelToken";
+import {HighLevelToken} from "../lib/HighLevelToken";
+import {HighLevelTokenizer} from "../lib/HighLevelTokenizer";
 
 describe('LowLevelTokenizer', function()
 {
@@ -17,10 +19,10 @@ describe('LowLevelTokenizer', function()
     tagLibrary.add(new TagDefinition("tag_2"));
     tagLibrary.add(new TagDefinition("i"));
 
-    return new LowLevelTokenizer(tagLibrary, input);
+    return new HighLevelTokenizer(new LowLevelTokenizer(tagLibrary, input));
   }
 
-  function assertToken(tokenizer: ITokenizer<LowLevelToken>, type: LowLevelTokenType, value: string, line: number, column: number, position: number)
+  function assertToken(tokenizer: ITokenizer<HighLevelToken>, type: LowLevelTokenType, value: string, line: number, column: number, position: number)
   {
     let token = tokenizer.getNext();
 
@@ -35,7 +37,7 @@ describe('LowLevelTokenizer', function()
     }
   }
 
-  function assertDone(tokenizer: ITokenizer<LowLevelToken>)
+  function assertDone(tokenizer: ITokenizer<HighLevelToken>)
   {
     let token = tokenizer.getNext();
 

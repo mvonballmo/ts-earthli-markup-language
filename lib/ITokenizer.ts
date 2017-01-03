@@ -1,6 +1,4 @@
-import {LowLevelToken} from "./LowLevelToken";
-
-export interface ITokenizer
+export interface ITokenizer<TToken>
 {
-  getNext(): LowLevelToken | null;
+  getNext(): TToken | null;
 }

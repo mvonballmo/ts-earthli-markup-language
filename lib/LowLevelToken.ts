@@ -1,23 +1,6 @@
 import {LowLevelTokenType} from "./LowLevelTokenType";
+import {Token} from "./Token";
 
-export class LowLevelToken
+export class LowLevelToken extends Token<LowLevelTokenType>
 {
-  constructor(type: LowLevelTokenType, value: string, line: number, column: number, position: number)
-  {
-    this.type = type;
-    this.value = value;
-    this.line = line;
-    this.column = column;
-    this.position = position;
-  }
-
-  type: LowLevelTokenType;
-
-  value: string;
-
-  line: number;
-
-  column: number;
-
-  position: number;
 }

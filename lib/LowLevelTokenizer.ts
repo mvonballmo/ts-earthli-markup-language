@@ -5,7 +5,7 @@ import {LowLevelToken} from "./LowLevelToken";
 import {ITagLibrary} from "./ITagLibrary";
 import {ITokenizer} from "./ITokenizer";
 
-export class LowLevelTokenizer implements ITokenizer
+export class LowLevelTokenizer implements ITokenizer<LowLevelToken>
 {
   constructor(tagLibrary: ITagLibrary, input: string)
   {
@@ -407,7 +407,7 @@ export class LowLevelTokenizer implements ITokenizer
     return this.scan - this.consumed;
   }
 
-  private createToken(tokenType: LowLevelTokenType, position?: number)
+  private createToken(tokenType: LowLevelTokenType, position: null | number = null)
   {
     let consumed = this.consumed;
     let column = this.column;
@@ -453,7 +453,7 @@ export class LowLevelTokenizer implements ITokenizer
     return null;
   }
 
-  private createFinalErrorToken(errorMessage: string, useLastToken?: boolean)
+  private createFinalErrorToken(errorMessage: string, useLastToken = false)
   {
     this.setState(LowLevelTokenType.Text);
 
@@ -464,7 +464,7 @@ export class LowLevelTokenizer implements ITokenizer
     return result;
   }
 
-  private createErrorToken(errorMessage: string, useLastToken?: boolean)
+  private createErrorToken(errorMessage: string, useLastToken = false)
   {
     let column = useLastToken && this.lastToken != null ? this.lastToken.column : this.column;
     let position = useLastToken && this.lastToken != null ? this.lastToken.position : this.consumed;
